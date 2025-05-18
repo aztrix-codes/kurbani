@@ -294,18 +294,7 @@ export default function ZonesPage() {
                 Email
                 <input name="email" type="email" value={formData.email} onChange={handleInputChange} />
               </label>
-              {!currentEditId && (
-                <label className="published-toggle">
-                  Published
-                  <Switch
-                    checked={formData.published === 1}
-                    onChange={togglePublished}
-                    className={`toggle-switch ${formData.published === 1 ? 'on' : 'off'}`}
-                  >
-                    <span className="switch-thumb" />
-                  </Switch>
-                </label>
-              )}
+              
               <div className="modal-actions">
                 <button type="button" onClick={() => {
                   setIsModalOpen(false);

@@ -124,6 +124,8 @@ export default function UserManagementPage() {
 
   // Upload image to ImgBB
   const uploadImageToImgBB = async (imageFile) => {
+    if (!imageFile) return null;
+    
     const formData = new FormData();
     formData.append('image', imageFile);
     
@@ -139,36 +141,51 @@ export default function UserManagementPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let imageUrl = null;
+      // Upload image if provided
+      let imageUrl = previewImage;
       if (formData.pfp) {
         imageUrl = await uploadImageToImgBB(formData.pfp);
       }
 
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')} ${currentDate.getHours()}:${String(currentDate.getMinutes()).padStart(2, '0')} ${currentDate.getHours() >= 12 ? 'pm' : 'am'}`;
+      const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
       if (currentEditId) {
-        await axios.put('/api/users', {
+        console.log('Updating user with ID:', currentEditId);
+        
+        // For update operation (PUT)
+        const updateData = {
           user_id: currentEditId,
           username: formData.name,
           phone: formData.phone,
           email: formData.email,
           area_name: formData.area,
-          created_date: formattedDate,
-          status: formData.approved,
-          img_url: imageUrl
-        });
+          status: formData.approved
+        };
+        
+        // Only include image URL if there's a change
+        if (imageUrl) {
+          updateData.img_url = imageUrl;
+        }
+        
+        const response = await axios.put('/api/users', updateData);
+        console.log('Update response:', response.data);
       } else {
-        await axios.post('/api/users', {
+        console.log('Creating new user');
+        
+        // For create operation (POST)
+        const createData = {
           username: formData.name,
           phone: formData.phone,
           email: formData.email,
           password: formData.password,
           area_name: formData.area,
-          created_date: formattedDate,
+          created_date: currentDate,
           status: formData.approved,
           img_url: imageUrl
-        });
+        };
+        
+        const response = await axios.post('/api/users', createData);
+        console.log('Create response:', response.data);
       }
       
       await fetchUsers();
@@ -176,7 +193,7 @@ export default function UserManagementPage() {
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error saving user:', error);
-      alert('Failed to save user');
+      alert(`Failed to save user: ${error.message}`);
     }
   };
 
@@ -185,7 +202,7 @@ export default function UserManagementPage() {
       name: user.name,
       phone: user.phone,
       email: user.email,
-      password: user.password,
+      password: user.password || '',
       area: user.area,
       approved: user.approved ? 1 : 0,
       pfp: null
@@ -387,25 +404,27 @@ export default function UserManagementPage() {
                 Email*
                 <input name="email" type="email" required value={formData.email} onChange={handleInputChange} />
               </label>
-              <label className="password-field">
-                Password*
-                <div className="password-input-container">
-                  <input 
-                    name="password" 
-                    type={showPassword ? "text" : "password"} 
-                    required 
-                    value={formData.password} 
-                    onChange={handleInputChange} 
-                  />
-                  <button 
-                    type="button" 
-                    className="toggle-password" 
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? "Hide" : "Show"}
-                  </button>
-                </div>
-              </label>
+              {!currentEditId && (
+                <label className="password-field">
+                  Password*
+                  <div className="password-input-container">
+                    <input 
+                      name="password" 
+                      type={showPassword ? "text" : "password"} 
+                      required={!currentEditId}
+                      value={formData.password} 
+                      onChange={handleInputChange} 
+                    />
+                    <button 
+                      type="button" 
+                      className="toggle-password" 
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? "Hide" : "Show"}
+                    </button>
+                  </div>
+                </label>
+              )}
               <label>
                 Area*
                 <select 
