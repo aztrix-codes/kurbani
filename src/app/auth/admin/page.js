@@ -236,7 +236,7 @@ function AdminLoginPage() {
                 id="username"
                 placeholder="Enter admin username"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value.replace(/\s/g, ''))}
                 required
               />
             </div>
@@ -249,7 +249,7 @@ function AdminLoginPage() {
                 id="password"
                 placeholder="Enter password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value.replace(/\s/g, ''))}
                 required
               />
             </div>

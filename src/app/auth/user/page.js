@@ -207,7 +207,7 @@ function UserLoginPage() {
                 id="identifier"
                 placeholder="Enter your username, email, or phone"
                 value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                onChange={(e) => setIdentifier(e.target.value.replace(/\s/g, ''))}
                 required
               />
             </div>
@@ -220,7 +220,7 @@ function UserLoginPage() {
                 id="password"
                 placeholder="Enter your password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => setPassword(e.target.value.replace(/\s/g, ''))}
                 required
               />
             </div>
