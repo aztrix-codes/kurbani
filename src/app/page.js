@@ -81,7 +81,7 @@ export default function Home() {
       width: '70%',
       maxWidth: '450px',
       padding: '40px',
-      borderRadius: '10px',
+      borderRadius: '1rem',
       backgroundColor: 'white',
       boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)'
     },
@@ -103,7 +103,7 @@ export default function Home() {
       backgroundColor: '#046307',
       color: 'white',
       border: 'none',
-      borderRadius: '6px',
+      borderRadius: '1rem',
       fontSize: '16px',
       fontWeight: '500',
       cursor: 'pointer',
