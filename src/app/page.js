@@ -5,28 +5,16 @@ import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [hoveredButton, setHoveredButton] = useState(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const handleNavigation = (path) => {
     router.push(`/auth/${path}`);
   };
-
-  // Handle responsive design after component mounts
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
-
-    // Set initial value
-    checkMobile();
-    
-    // Add event listener
-    window.addEventListener('resize', checkMobile);
-    
-    // Clean up
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
 
   const styles = {
     mainContainer: {
@@ -36,20 +24,20 @@ export default function Home() {
       margin: 0,
       padding: 0,
       overflow: 'hidden',
-      flexDirection: isMobile ? 'column-reverse' : 'row-reverse'
+      flexDirection: 'row-reverse'
     },
     leftPanel: {
-      width: isMobile ? '100%' : '50%',
-      height: isMobile ? '30%' : '100%',
+      width: '50%',
+      height: '100%',
       backgroundColor: '#046307',
-      display: isMobile ? 'none' : 'flex',
+      display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       position: 'relative'
     },
     rightPanel: {
-      width: isMobile ? '100%' : '50%',
-      height: isMobile ? '70%' : '100%',
+      width: '50%',
+      height: '100%',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
@@ -90,9 +78,9 @@ export default function Home() {
       lineHeight: 1.6
     },
     formContainer: {
-      width: isMobile ? '85%' : '70%',
+      width: '70%',
       maxWidth: '450px',
-      padding: isMobile ? '30px' : '40px',
+      padding: '40px',
       borderRadius: '10px',
       backgroundColor: 'white',
       boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)'
@@ -128,6 +116,37 @@ export default function Home() {
       boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
     }
   };
+
+  // Only apply media queries on client side
+  if (isClient) {
+    const responsiveStyles = (() => {
+      if (window.innerWidth <= 768) {
+        return {
+          mainContainer: {
+            flexDirection: 'column-reverse'
+          },
+          leftPanel: {
+            display: 'none'
+          },
+          rightPanel: {
+            width: '100%',
+            height: '100%'
+          },
+          formContainer: {
+            width: '85%',
+            padding: '30px'
+          }
+        };
+      }
+      return {};
+    })();
+
+    Object.keys(responsiveStyles).forEach(key => {
+      if (styles[key]) {
+        styles[key] = { ...styles[key], ...responsiveStyles[key] };
+      }
+    });
+  }
 
   return (
     <div style={styles.mainContainer}>
