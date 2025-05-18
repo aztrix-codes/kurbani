@@ -1,0 +1,68 @@
+create database kurbani;
+
+USE kurbani;
+
+CREATE TABLE admin (
+    admin_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE zones (
+    zone_id INT AUTO_INCREMENT PRIMARY KEY,
+    zone_name VARCHAR(100) NOT NULL UNIQUE,
+    zone_incharge VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(100),
+    created_date DATETIME DEFAULT CURRENT_TIMESTAMP, 
+    status TINYINT(1) DEFAULT 1
+);
+
+CREATE TABLE areas (
+    area_id INT AUTO_INCREMENT PRIMARY KEY,
+    area_name VARCHAR(100) NOT NULL UNIQUE,
+    area_incharge VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(100),
+    zone_name VARCHAR(100) NOT NULL,
+    created_date DATETIME DEFAULT CURRENT_TIMESTAMP, 
+    status TINYINT(1) DEFAULT 1, 
+    FOREIGN KEY (zone_name) REFERENCES zones(zone_name) ON UPDATE CASCADE
+);
+
+CREATE TABLE users (
+    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    phone VARCHAR(20) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL, 
+    area_name VARCHAR(100) NOT NULL,
+    created_date DATETIME DEFAULT CURRENT_TIMESTAMP, 
+    status TINYINT(1) DEFAULT 1, 
+    img_url VARCHAR(255),
+    FOREIGN KEY (area_name) REFERENCES areas(area_name) ON UPDATE CASCADE
+);
+
+
+
+
+INSERT INTO zones (zone_name, zone_incharge, phone, email)
+VALUES 
+('North Zone', 'Alice Johnson', '9876543210', 'alice.north@example.com'),
+('South Zone', 'Bob Smith', '8765432109', 'bob.south@example.com'),
+('East Zone', 'Carol White', '7654321098', 'carol.east@example.com');
+
+INSERT INTO areas (area_name, area_incharge, phone, email, zone_name)
+VALUES 
+('North Area 1', 'David Miller', '9988776655', 'david.north1@example.com', 'North Zone'),
+('North Area 2', 'Eve Turner', '8877665544', 'eve.north2@example.com', 'North Zone'),
+('South Area 1', 'Frank Harris', '7766554433', 'frank.south1@example.com', 'South Zone'),
+('East Area 1', 'Grace Lee', '6655443322', 'grace.east1@example.com', 'East Zone');
+
+INSERT INTO users (username, phone, email, password, area_name, img_url)
+VALUES 
+('john_doe', '9123456780', 'john@example.com', 'hashed_password_1', 'North Area 1', 'https://example.com/img/john.jpg'),
+('jane_doe', '9234567890', 'jane@example.com', 'hashed_password_2', 'North Area 2', 'https://example.com/img/jane.jpg'),
+('sam_smith', '9345678901', 'sam@example.com', 'hashed_password_3', 'South Area 1', 'https://example.com/img/sam.jpg'),
+('lisa_brown', '9456789012', 'lisa@example.com', 'hashed_password_4', 'East Area 1', 'https://example.com/img/lisa.jpg');
+
