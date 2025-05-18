@@ -1,13 +1,18 @@
-'use client'
+'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
 function UserLoginPage() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [redirect, setRedirect] = useState(false);
+  const [buttonHovered, setButtonHovered] = useState(false);
+  const router = useRouter();
 
+  // Handle redirect
   useEffect(() => {
     if (redirect) {
       router.push('/user');
@@ -21,7 +26,7 @@ function UserLoginPage() {
 
     setTimeout(() => {
       if (identifier && password) {
-        setRedirect(true); // Triggers redirect on client side
+        setRedirect(true);
       } else {
         setError('Please enter both identifier and password');
       }
@@ -29,7 +34,31 @@ function UserLoginPage() {
     }, 800);
   };
 
-  const styles = {
+  // Media query function for responsive design - now safe for SSR
+  const applyMediaQuery = () => {
+    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
+      return {
+        mainContainer: {
+          flexDirection: 'column-reverse'
+        },
+        leftPanel: {
+          display: 'none'
+        },
+        rightPanel: {
+          width: '100%',
+          height: '100%'
+        },
+        formContainer: {
+          width: '85%',
+          padding: '30px'
+        }
+      };
+    }
+    return {};
+  };
+
+  // Initialize styles
+  const [styles, setStyles] = useState({
     mainContainer: {
       display: 'flex',
       width: '100vw',
@@ -147,40 +176,37 @@ function UserLoginPage() {
       marginTop: '10px',
       textAlign: 'center'
     }
-  };
-
-  // Media query function for responsive design
-  const applyMediaQuery = () => {
-    if (window.innerWidth <= 768) {
-      return {
-        mainContainer: {
-          flexDirection: 'column-reverse'
-        },
-        leftPanel: {
-          display: 'none'
-        },
-        rightPanel: {
-          width: '100%',
-          height: '100%'
-        },
-        formContainer: {
-          width: '85%',
-          padding: '30px'
-        }
-      };
-    }
-    return {};
-  };
-
-  // Apply responsive styles
-  const responsiveStyles = applyMediaQuery();
-  Object.keys(responsiveStyles).forEach(key => {
-    if (styles[key]) {
-      styles[key] = { ...styles[key], ...responsiveStyles[key] };
-    }
   });
 
-  const [buttonHovered, setButtonHovered] = useState(false);
+  // Apply responsive styles after component mounts
+  useEffect(() => {
+    const responsiveStyles = applyMediaQuery();
+    setStyles(prevStyles => {
+      const newStyles = {...prevStyles};
+      Object.keys(responsiveStyles).forEach(key => {
+        if (newStyles[key]) {
+          newStyles[key] = { ...newStyles[key], ...responsiveStyles[key] };
+        }
+      });
+      return newStyles;
+    });
+
+    const handleResize = () => {
+      const responsiveStyles = applyMediaQuery();
+      setStyles(prevStyles => {
+        const newStyles = {...prevStyles};
+        Object.keys(responsiveStyles).forEach(key => {
+          if (newStyles[key]) {
+            newStyles[key] = { ...newStyles[key], ...responsiveStyles[key] };
+          }
+        });
+        return newStyles;
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div style={styles.mainContainer}>
