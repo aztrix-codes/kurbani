@@ -24,7 +24,7 @@ export default function Home() {
       margin: 0,
       padding: 0,
       overflow: 'hidden',
-      flexDirection: 'row-reverse'
+      flexDirection: 'row-reverse',
     },
     leftPanel: {
       width: '50%',
@@ -114,7 +114,25 @@ export default function Home() {
       backgroundColor: '#034d05',
       transform: 'translateY(-2px)',
       boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
-    }
+    },
+    backgroundCircle3: {
+      position: 'absolute',
+      width: '300px',
+      height: '300px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      top: '5%',
+      left: '20%'
+    },
+    backgroundCircle4: {
+      position: 'absolute',
+      width: '300px',
+      height: '300px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      bottom: '-15%',
+      left: '-15%'
+    },
   };
 
   // Only apply media queries on client side
@@ -123,14 +141,16 @@ export default function Home() {
       if (window.innerWidth <= 768) {
         return {
           mainContainer: {
-            flexDirection: 'column-reverse'
+            flexDirection: 'column',
+            background: '#046307' // This sets the mobile background to green
           },
           leftPanel: {
-            display: 'none'
+            display: 'none' // Hide the left panel on mobile
           },
           rightPanel: {
             width: '100%',
-            height: '100%'
+            height: '100%',
+            background: 'transparent' // Make right panel transparent to show green background
           },
           formContainer: {
             width: '85%',
@@ -152,6 +172,8 @@ export default function Home() {
     <div style={styles.mainContainer}>
       {/* Right Panel - Login Selection */}
       <div style={styles.rightPanel}>
+        <div style={styles.backgroundCircle3}></div>
+        <div style={styles.backgroundCircle4}></div>
         <div style={styles.formContainer}>
           <h2 style={styles.formTitle}>Select Login Type</h2>
           
@@ -177,7 +199,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Left Panel - Branding */}
+      {/* Left Panel - Branding (hidden on mobile) */}
       <div style={styles.leftPanel}>
         <div style={styles.backgroundCircle1}></div>
         <div style={styles.backgroundCircle2}></div>

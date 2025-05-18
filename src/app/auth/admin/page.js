@@ -11,7 +11,6 @@ function AdminLoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -29,7 +28,6 @@ function AdminLoginPage() {
       console.error('Login error:', err);
       
       if (err.response) {
-        // The server responded with an error status
         if (err.response.status === 401) {
           setError('Invalid username or password');
         } else if (err.response.status === 400) {
@@ -38,10 +36,8 @@ function AdminLoginPage() {
           setError(`Server error occurred: ${err.response.data?.error || 'Unknown error'}`);
         }
       } else if (err.request) {
-        // The request was made but no response was received
         setError('Network error - please check your connection and try again');
       } else {
-        // Something happened in setting up the request
         setError('An unexpected error occurred');
       }
     } finally {
@@ -75,24 +71,6 @@ function AdminLoginPage() {
       justifyContent: 'center',
       alignItems: 'center',
       backgroundColor: '#f5f5f5'
-    },
-    backgroundCircle1: {
-      position: 'absolute',
-      width: '300px',
-      height: '300px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      top: '10%',
-      left: '10%'
-    },
-    backgroundCircle2: {
-      position: 'absolute',
-      width: '400px',
-      height: '400px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      bottom: '10%',
-      right: '5%'
     },
     leftPanelContent: {
       color: 'white',
@@ -156,7 +134,7 @@ function AdminLoginPage() {
       fontWeight: '500',
       cursor: 'pointer',
       transition: 'background-color 0.2s',
-      marginTop: '10px'
+      marginTop: '10px',
     },
     submitButtonHover: {
       backgroundColor: '#034d05'
@@ -166,7 +144,43 @@ function AdminLoginPage() {
       fontSize: '14px',
       marginTop: '10px',
       textAlign: 'center'
-    }
+    },
+    backgroundCircle1: {
+      position: 'absolute',
+      width: '300px',
+      height: '300px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      top: '10%',
+      left: '10%'
+    },
+    backgroundCircle2: {
+      position: 'absolute',
+      width: '400px',
+      height: '400px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      bottom: '10%',
+      right: '5%'
+    },
+    backgroundCircle3: {
+      position: 'absolute',
+      width: '300px',
+      height: '300px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      top: '5%',
+      left: '20%'
+    },
+    backgroundCircle4: {
+      position: 'absolute',
+      width: '300px',
+      height: '300px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      bottom: '-15%',
+      left: '-15%'
+    },
   };
 
   // Media query function for responsive design
@@ -174,19 +188,22 @@ function AdminLoginPage() {
     if (typeof window !== 'undefined' && window.innerWidth <= 768) {
       return {
         mainContainer: {
-          flexDirection: 'column-reverse'
+          flexDirection: 'column',
+          backgroundColor: '#046307' // Set green background for mobile
         },
         leftPanel: {
           display: 'none'
         },
         rightPanel: {
           width: '100%',
-          height: '100%'
+          height: '100%',
+          backgroundColor: 'transparent' // Make transparent to show green background
         },
         formContainer: {
           width: '85%',
           padding: '30px'
         }
+
       };
     }
     return {};
@@ -204,8 +221,9 @@ function AdminLoginPage() {
 
   return (
     <div style={styles.mainContainer}>
-      {/* Right Panel - Login Form */}
       <div style={styles.rightPanel}>
+        <div style={styles.backgroundCircle3}></div>
+        <div style={styles.backgroundCircle4}></div>
         <div style={styles.formContainer}>
           <h2 style={styles.formTitle}>Admin Login</h2>
           
@@ -251,7 +269,7 @@ function AdminLoginPage() {
         </div>
       </div>
 
-      {/* Left Panel - Branding */}
+      {/* Left Panel - Branding (hidden on mobile) */}
       <div style={styles.leftPanel}>
         <div style={styles.backgroundCircle1}></div>
         <div style={styles.backgroundCircle2}></div>

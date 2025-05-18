@@ -10,9 +10,18 @@ function UserLoginPage() {
   const [error, setError] = useState('');
   const [redirect, setRedirect] = useState(false);
   const [buttonHovered, setButtonHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
 
-  // Handle redirect
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   useEffect(() => {
     if (redirect) {
       router.push('/user');
@@ -34,31 +43,7 @@ function UserLoginPage() {
     }, 800);
   };
 
-  // Media query function for responsive design - now safe for SSR
-  const applyMediaQuery = () => {
-    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
-      return {
-        mainContainer: {
-          flexDirection: 'column-reverse'
-        },
-        leftPanel: {
-          display: 'none'
-        },
-        rightPanel: {
-          width: '100%',
-          height: '100%'
-        },
-        formContainer: {
-          width: '85%',
-          padding: '30px'
-        }
-      };
-    }
-    return {};
-  };
-
-  // Initialize styles
-  const [styles, setStyles] = useState({
+  const styles = {
     mainContainer: {
       display: 'flex',
       width: '100vw',
@@ -66,43 +51,39 @@ function UserLoginPage() {
       margin: 0,
       padding: 0,
       overflow: 'hidden',
-      flexDirection: 'row-reverse'
+      flexDirection: isMobile ? 'column' : 'row-reverse',
+      backgroundColor: isMobile ? '#046307' : 'transparent',
+      position: 'relative'
     },
     leftPanel: {
-      width: '50%',
+      width: isMobile ? '0%' : '50%',
       height: '100%',
       backgroundColor: '#046307',
-      display: 'flex',
+      display: isMobile ? 'none' : 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       position: 'relative'
     },
     rightPanel: {
-      width: '50%',
-      height: '100%',
+      width: isMobile ? '100%' : '50%',
+      height: isMobile ? '100%' : '100%',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#f5f5f5'
+      backgroundColor: isMobile ? 'transparent' : '#f5f5f5',
+      position: 'relative'
     },
-    backgroundCircle1: {
-      position: 'absolute',
-      width: '300px',
-      height: '300px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      top: '10%',
-      left: '10%'
+    formContainer: {
+      width: isMobile ? '90%' : '70%',
+      maxWidth: '450px',
+      padding: isMobile ? '30px' : '40px',
+      borderRadius: '10px',
+      backgroundColor: 'white',
+      boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)',
+      margin: isMobile ? '0 auto' : '0',
+      transform: isMobile ? 'translateY(0)' : 'none'
     },
-    backgroundCircle2: {
-      position: 'absolute',
-      width: '400px',
-      height: '400px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      bottom: '10%',
-      right: '5%'
-    },
+    // Keep all your other style objects exactly the same
     leftPanelContent: {
       color: 'white',
       textAlign: 'center',
@@ -118,14 +99,6 @@ function UserLoginPage() {
       fontSize: '20px',
       opacity: 0.9,
       lineHeight: 1.6
-    },
-    formContainer: {
-      width: '70%',
-      maxWidth: '450px',
-      padding: '40px',
-      borderRadius: '10px',
-      backgroundColor: 'white',
-      boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)'
     },
     formTitle: {
       fontSize: '28px',
@@ -175,43 +148,53 @@ function UserLoginPage() {
       fontSize: '14px',
       marginTop: '10px',
       textAlign: 'center'
-    }
-  });
-
-  // Apply responsive styles after component mounts
-  useEffect(() => {
-    const responsiveStyles = applyMediaQuery();
-    setStyles(prevStyles => {
-      const newStyles = {...prevStyles};
-      Object.keys(responsiveStyles).forEach(key => {
-        if (newStyles[key]) {
-          newStyles[key] = { ...newStyles[key], ...responsiveStyles[key] };
-        }
-      });
-      return newStyles;
-    });
-
-    const handleResize = () => {
-      const responsiveStyles = applyMediaQuery();
-      setStyles(prevStyles => {
-        const newStyles = {...prevStyles};
-        Object.keys(responsiveStyles).forEach(key => {
-          if (newStyles[key]) {
-            newStyles[key] = { ...newStyles[key], ...responsiveStyles[key] };
-          }
-        });
-        return newStyles;
-      });
-    };
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    },
+    backgroundCircle1: {
+      position: 'absolute',
+      width: '300px',
+      height: '300px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      top: '10%',
+      left: '10%',
+      display: isMobile ? 'none' : 'block'
+    },
+    backgroundCircle2: {
+      position: 'absolute',
+      width: '400px',
+      height: '400px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      bottom: '10%',
+      right: '5%',
+      display: isMobile ? 'none' : 'block'
+    },
+    backgroundCircle3: {
+      position: 'absolute',
+      width: '300px',
+      height: '300px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      top: '5%',
+      left: '20%'
+    },
+    backgroundCircle4: {
+      position: 'absolute',
+      width: '300px',
+      height: '300px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      bottom: '-15%',
+      left: '-15%'
+    },
+  };
 
   return (
     <div style={styles.mainContainer}>
       {/* Right Panel - Login Form */}
       <div style={styles.rightPanel}>
+        <div style={styles.backgroundCircle3}></div>
+        <div style={styles.backgroundCircle4}></div>
         <div style={styles.formContainer}>
           <h2 style={styles.formTitle}>User Login</h2>
           
@@ -257,7 +240,7 @@ function UserLoginPage() {
         </div>
       </div>
 
-      {/* Left Panel - Branding */}
+      {/* Left Panel - Branding (hidden on mobile) */}
       <div style={styles.leftPanel}>
         <div style={styles.backgroundCircle1}></div>
         <div style={styles.backgroundCircle2}></div>
