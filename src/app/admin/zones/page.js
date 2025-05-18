@@ -19,6 +19,7 @@ export default function ZonesPage() {
   const [currentEditId, setCurrentEditId] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Format date to "YYYY-MM-DD HH:MM am/pm" format
   const formatDate = (dateString) => {
@@ -59,9 +60,10 @@ export default function ZonesPage() {
         createdDate: formatDate(zone.created_date)
       }));
       setZones(mappedZones);
+      setErrorMessage('');
     } catch (error) {
       console.error('Error fetching zones:', error);
-      alert('Failed to fetch zones');
+      setErrorMessage('Failed to fetch zones');
     } finally {
       setIsLoading(false);
     }
@@ -84,35 +86,46 @@ export default function ZonesPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
+    
     try {
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')} ${currentDate.getHours()}:${String(currentDate.getMinutes()).padStart(2, '0')} ${currentDate.getHours() >= 12 ? 'pm' : 'am'}`;
-
+      const formattedDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      
+      const requestData = {
+        zone_name: formData.zone,
+        zone_incharge: formData.nigra,
+        phone: formData.mobile,
+        email: formData.email,
+        created_date: formattedDate,
+        status: formData.published
+      };
+      
+      console.log('Submitting form with data:', currentEditId ? { ...requestData, zone_id: currentEditId } : requestData);
+      
+      let response;
       if (currentEditId) {
-        await axios.put('/api/zones', {
-          zone_id: currentEditId,
-          zone_name: formData.zone,
-          zone_incharge: formData.nigra,
-          phone: formData.mobile,
-          email: formData.email,
-          created_date: formattedDate
+        response = await axios.put('/api/zones', {
+          ...requestData,
+          zone_id: currentEditId
         });
       } else {
-        await axios.post('/api/zones', {
-          zone_name: formData.zone,
-          zone_incharge: formData.nigra,
-          phone: formData.mobile,
-          email: formData.email,
-          created_date: formattedDate,
-          status: formData.published
-        });
+        response = await axios.post('/api/zones', requestData);
       }
+      
+      console.log('Server response:', response.data);
+      
       await fetchZones();
       resetForm();
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error saving zone:', error);
-      alert('Failed to save zone');
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+        setErrorMessage(`Failed to save zone: ${error.response.data.error || error.message}`);
+      } else {
+        setErrorMessage(`Failed to save zone: ${error.message}`);
+      }
     }
   };
 
@@ -121,7 +134,7 @@ export default function ZonesPage() {
       zone: zone.zone,
       nigra: zone.nigra,
       mobile: zone.mobile,
-      email: zone.email,
+      email: zone.email || '',
       published: zone.published ? 1 : 0
     });
     setCurrentEditId(zone.id);
@@ -133,9 +146,10 @@ export default function ZonesPage() {
       try {
         await axios.delete('/api/zones', { data: { zone_id: id } });
         await fetchZones();
+        setErrorMessage('');
       } catch (error) {
         console.error('Error deleting zone:', error);
-        alert('Failed to delete zone');
+        setErrorMessage('Failed to delete zone');
       }
     }
   };
@@ -154,15 +168,17 @@ export default function ZonesPage() {
       setZones(zones.map(zone =>
         zone.id === id ? { ...zone, published: newStatus === 1 } : zone
       ));
+      setErrorMessage('');
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Failed to update status');
+      setErrorMessage('Failed to update status');
     }
   };
 
   const resetForm = () => {
     setFormData({ zone: '', nigra: '', mobile: '', email: '', published: 1 });
     setCurrentEditId(null);
+    setErrorMessage('');
   };
 
   if (isLoading) {
@@ -177,6 +193,12 @@ export default function ZonesPage() {
           <FiPlus /> Add Zone
         </button>
       </div>
+
+      {errorMessage && (
+        <div className="error-message" style={{ color: 'red', margin: '10px 0' }}>
+          {errorMessage}
+        </div>
+      )}
 
       <div className="search-box">
         <div className="search-input">
@@ -272,6 +294,18 @@ export default function ZonesPage() {
                 Email
                 <input name="email" type="email" value={formData.email} onChange={handleInputChange} />
               </label>
+              {!currentEditId && (
+                <label className="published-toggle">
+                  Published
+                  <Switch
+                    checked={formData.published === 1}
+                    onChange={togglePublished}
+                    className={`toggle-switch ${formData.published === 1 ? 'on' : 'off'}`}
+                  >
+                    <span className="switch-thumb" />
+                  </Switch>
+                </label>
+              )}
               <div className="modal-actions">
                 <button type="button" onClick={() => {
                   setIsModalOpen(false);

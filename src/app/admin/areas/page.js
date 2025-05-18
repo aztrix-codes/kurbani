@@ -22,6 +22,7 @@ export default function AreasPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isZonesLoading, setIsZonesLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Format date to "YYYY-MM-DD HH:MM am/pm" format
   const formatDate = (dateString) => {
@@ -51,9 +52,10 @@ export default function AreasPage() {
         .filter(zone => zone.status === 1)
         .map(zone => zone.zone_name);
       setZonesList(publishedZones);
+      setErrorMessage('');
     } catch (error) {
       console.error('Error fetching zones:', error);
-      alert('Failed to fetch zones');
+      setErrorMessage('Failed to fetch zones');
     } finally {
       setIsZonesLoading(false);
     }
@@ -75,9 +77,10 @@ export default function AreasPage() {
         createdDate: formatDate(area.created_date)
       }));
       setAreas(mappedAreas);
+      setErrorMessage('');
     } catch (error) {
       console.error('Error fetching areas:', error);
-      alert('Failed to fetch areas');
+      setErrorMessage('Failed to fetch areas');
     } finally {
       setIsLoading(false);
     }
@@ -106,37 +109,47 @@ export default function AreasPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErrorMessage('');
+    
     try {
-      const currentDate = new Date();
-      const formattedDate = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')} ${currentDate.getHours()}:${String(currentDate.getMinutes()).padStart(2, '0')} ${currentDate.getHours() >= 12 ? 'pm' : 'am'}`;
-
+      const formattedDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      
+      const requestData = {
+        area_name: formData.area,
+        area_incharge: formData.nigra,
+        phone: formData.mobile,
+        email: formData.email,
+        zone_name: formData.zone,
+        created_date: formattedDate,
+        status: formData.published
+      };
+      
+      console.log('Submitting form with data:', currentEditId ? { ...requestData, area_id: currentEditId } : requestData);
+      
+      let response;
       if (currentEditId) {
-        await axios.put('/api/areas', {
-          area_id: currentEditId,
-          area_name: formData.area,
-          area_incharge: formData.nigra,
-          phone: formData.mobile,
-          email: formData.email,
-          zone_name: formData.zone,
-          created_date: formattedDate
+        response = await axios.put('/api/areas', {
+          ...requestData,
+          area_id: currentEditId
         });
       } else {
-        await axios.post('/api/areas', {
-          area_name: formData.area,
-          area_incharge: formData.nigra,
-          phone: formData.mobile,
-          email: formData.email,
-          zone_name: formData.zone,
-          created_date: formattedDate,
-          status: formData.published
-        });
+        response = await axios.post('/api/areas', requestData);
       }
+      
+      console.log('Server response:', response.data);
+      
       await fetchAreas();
       resetForm();
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error saving area:', error);
-      alert('Failed to save area');
+      if (error.response) {
+        console.error('Response data:', error.response.data);
+        console.error('Response status:', error.response.status);
+        setErrorMessage(`Failed to save area: ${error.response.data.error || error.message}`);
+      } else {
+        setErrorMessage(`Failed to save area: ${error.message}`);
+      }
     }
   };
 
@@ -145,7 +158,7 @@ export default function AreasPage() {
       area: area.area,
       nigra: area.nigra,
       mobile: area.mobile,
-      email: area.email,
+      email: area.email || '',
       zone: area.zone,
       published: area.published ? 1 : 0
     });
@@ -158,9 +171,10 @@ export default function AreasPage() {
       try {
         await axios.delete('/api/areas', { data: { area_id: id } });
         await fetchAreas();
+        setErrorMessage('');
       } catch (error) {
         console.error('Error deleting area:', error);
-        alert('Failed to delete area');
+        setErrorMessage('Failed to delete area');
       }
     }
   };
@@ -178,15 +192,17 @@ export default function AreasPage() {
       setAreas(areas.map(area =>
         area.id === id ? { ...area, published: newStatus === 1 } : area
       ));
+      setErrorMessage('');
     } catch (error) {
       console.error('Error updating status:', error);
-      alert('Failed to update status');
+      setErrorMessage('Failed to update status');
     }
   };
 
   const resetForm = () => {
     setFormData({ area: '', nigra: '', mobile: '', email: '', zone: '', published: 1 });
     setCurrentEditId(null);
+    setErrorMessage('');
   };
 
   if (isLoading || isZonesLoading) {
@@ -201,6 +217,12 @@ export default function AreasPage() {
           <FiPlus /> Add Area
         </button>
       </div>
+
+      {errorMessage && (
+        <div className="error-message" style={{ color: 'red', margin: '10px 0' }}>
+          {errorMessage}
+        </div>
+      )}
 
       <div className="search-box">
         <div className="search-input">
@@ -313,6 +335,18 @@ export default function AreasPage() {
                   ))}
                 </select>
               </label>
+              {!currentEditId && (
+                <label className="published-toggle">
+                  Published
+                  <Switch
+                    checked={formData.published === 1}
+                    onChange={togglePublished}
+                    className={`toggle-switch ${formData.published === 1 ? 'on' : 'off'}`}
+                  >
+                    <span className="switch-thumb" />
+                  </Switch>
+                </label>
+              )}
               <div className="modal-actions">
                 <button type="button" onClick={() => {
                   setIsModalOpen(false);
