@@ -1,44 +1,18 @@
 import mysql from 'mysql2/promise';
+import dotenv from 'dotenv';
+dotenv.config({ path: '.env.local' });
 
 const pool = mysql.createPool({
-  host: 'mysql-1e6ad382-zvvz.g.aivencloud.com',
-  user: 'avnadmin',
-  port: 27859,
-  password: 'AVNS_hzoHJL4manf1quJMdzH', 
-  database: 'defaultdb',
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
   ssl: {
-    ca: `
------BEGIN CERTIFICATE-----
-MIIETTCCArWgAwIBAgIUcta8sSHa9h5Y+wc+bQTbv79IMo0wDQYJKoZIhvcNAQEM
-BQAwQDE+MDwGA1UEAww1ODlmOWNiNTYtYzJlZS00YzViLTgzOTAtOWQ0ZWU5MzI2
-OTBjIEdFTiAxIFByb2plY3QgQ0EwHhcNMjUwNTE4MDcwMjQ1WhcNMzUwNTE2MDcw
-MjQ1WjBAMT4wPAYDVQQDDDU4OWY5Y2I1Ni1jMmVlLTRjNWItODM5MC05ZDRlZTkz
-MjY5MGMgR0VOIDEgUHJvamVjdCBDQTCCAaIwDQYJKoZIhvcNAQEBBQADggGPADCC
-AYoCggGBAKVSv3904gO99oNQGsOgM69K1F1Q3XthuX02/TPA71Xe+7b2GasZjAHl
-ohTtVWN7BxH/uuku3b9rfe9ev9Jia6v7cBiAedD82vilhvLQqX4iXKeKTxMSKIzM
-dr4KZR+Mt2lXphX6AmxqoJ/senLZ3TmJHWBBiGzCeadugU24tMeM78acHoO9JgXu
-xk6snkYkUK7+6lJ15z8Nvq/1X7P5RsAX+s4uSKmhOghRp5gxaGxiKECaljESVMVa
-Xb77vbfEebtAcy+dj9VC7Q4xHLFNlNI6nue9bd/R/Or7RCJf1aVdvQZRmBaqXQM5
-nslm0SUVhx53PX62eLfZcMJ8XgqJ6IrSxy+gwddHVkUGTFn5NAwUAaLHlUk9mIak
-wQvTvEpIf/lyIOi2LtBWgCU9ukueKe6RPy7JlvgdFFSwHIghri7NucM8CnD4593A
-CM5hwi4XDS2Lhvv1/rYsgzJ6ZRK7mSgckqDPSUc/XmIvGjGsmsT7dug28msbvDIu
-XCVQtoRc0QIDAQABoz8wPTAdBgNVHQ4EFgQUuE4oy2HVn14nRuQ36uN9hLM7pzkw
-DwYDVR0TBAgwBgEB/wIBADALBgNVHQ8EBAMCAQYwDQYJKoZIhvcNAQEMBQADggGB
-AIPIeSJ+cWaJEm+Pc7zlVwIzvY6Fv3kQa25JDTcAF030NGGBW/j9Ytknpto4Gr0E
-zOyehxSQszY1fUNQ2PUiJViGrI+/ttw849KN7TeGZTZlGavbGm/1H/LQVeIm2/Q1
-ixjzIr3p7e/8FwtnJcYOkkm0Hhcp09PvTqsgxa5ap8U50YnA/RLh8NkPrO6HAZCO
-oPNkYlpmHhvDIMfxvJR3vjNQWbFhCiAxozucLBuGFKZtoT0mYD3LuRBNZlABkmXX
-aZNca4QZ/VQvxWZBSvdd6POOWdIE1wACgZhZggORBXQP18VCkcl1vH5VAiAGCok3
-IAXatc/EhvimdS2KLQrF/LHsYSZNpcb4J8nNX/0AnzOKp9U+MxT1C5KXx/1/F/EA
-u5J0uh5u9jfpkFQQNzAq6+03C2wO+TQmyBc8fbdeZYVlpuKm2nz4gj56W56y0phW
-fOl7u2y5LYyjzkYNzH+jPwP31hG/qngZz/6pnGbtpnJa3v4axDRpvYVTydFv921k
-KQ==
------END CERTIFICATE-----
-
-`
+    ca: process.env.DB_CA.replace(/\\n/g, '\n')
   }
 });
 
