@@ -1,13 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState } from 'react'
 import './navStyle.css'
 
 export default function AdminLayout({ children }) {
   const pathname = usePathname()
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const router = useRouter()
 
   const links = [
     {title: "Manage Zones", path: 'zones'},
@@ -19,8 +20,13 @@ export default function AdminLayout({ children }) {
     setMobileNavOpen(!mobileNavOpen)
   }
 
+  const logout = () => {
+    localStorage.setItem('adminLoggedIn', 'false');
+    router.replace('/auth/admin');
+  }
+
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body>
         <nav className="wide-nav">
           <h1>Admin Panel</h1>
@@ -35,13 +41,17 @@ export default function AdminLayout({ children }) {
               </Link>
             ))}
           </div>
+          <div onClick={logout} className='main-nav-log-out'>Log out</div>
         </nav>
 
         <header className="mobile-header">
           <button className="hamburger" onClick={toggleMobileNav}>
-            ☰
+            <img src='https://img.icons8.com/?size=100&id=36389&format=png&color=ffffff' style={{width: '2rem', height: '1.8rem'}} />
           </button>
-          <h1>Admin Panel</h1>
+          <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', width: '35vw', alignItems: 'center'}}>
+            <h1>Admin Panel</h1>
+            <div onClick={logout}> <img src='https://img.icons8.com/?size=100&id=59995&format=png&color=ffffff' style={{width: '1.8rem'}} /> </div>
+          </div>
         </header>
 
         <div className={`mobile-nav ${mobileNavOpen ? 'open' : ''}`}>

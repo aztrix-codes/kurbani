@@ -99,6 +99,16 @@ body {
     opacity: 1;
 }
 
+.main-nav-log-out {
+    color: #fff;
+    font-size: 1.5vw;
+    text-align: center;
+    position: absolute;
+    bottom: 5vh;
+    left: 4.5vw;
+    cursor: pointer;
+}
+
 .main {
     flex: 1;
     height: 100%;
@@ -110,7 +120,7 @@ body {
 .mobile-header {
     display: none;
     background: linear-gradient(135deg, #046307 0%, #035a06 100%);
-    padding: 0 1.5rem;
+    padding: .35rem .8rem;
     align-items: center;
     justify-content: space-between;
     position: fixed;

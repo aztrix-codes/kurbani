@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useRouter } from 'next/navigation';
 
@@ -10,6 +10,13 @@ function AdminLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
+
+  useEffect(() => {
+    const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+    if (isLoggedIn) {
+      router.push('/admin/zones');
+    }
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,10 +29,12 @@ function AdminLoginPage() {
       });
 
       if (response.status === 200) {
+        localStorage.setItem('adminLoggedIn', 'true');
         router.push('/admin/zones');
       }
     } catch (err) {
       console.error('Login error:', err);
+      localStorage.setItem('adminLoggedIn', 'false');
       
       if (err.response) {
         if (err.response.status === 401) {

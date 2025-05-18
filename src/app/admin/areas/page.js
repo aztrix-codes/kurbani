@@ -5,6 +5,7 @@ import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX } from 'react-icons/fi';
 import { Switch } from '@headlessui/react';
 import axios from 'axios';
 import './areasStyle.css';
+import { useRouter } from 'next/navigation';
 
 export default function AreasPage() {
   const [zonesList, setZonesList] = useState([]); // Will be populated from API
@@ -23,6 +24,17 @@ export default function AreasPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isZonesLoading, setIsZonesLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const router = useRouter();
+    
+  
+    useEffect(() => {
+      // Check if user is already logged in
+      const isLogged = localStorage.getItem('adminLoggedIn') === 'false';
+      if (isLogged) {
+        // Redirect to admin dashboard if already logged in
+        router.replace('/auth/admin');
+      }
+    }, [router]);
 
   // Format date to "YYYY-MM-DD HH:MM am/pm" format
   const formatDate = (dateString) => {
@@ -243,9 +255,9 @@ export default function AreasPage() {
             <div className="table-cell">Sr No</div>
             <div className="table-cell">Nigra</div>
             <div className="table-cell">Area</div>
+            <div className="table-cell">Zone</div>
             <div className="table-cell">Mobile</div>
             <div className="table-cell">Email</div>
-            <div className="table-cell">Zone</div>
             <div className="table-cell">Published</div>
             <div className="table-cell">Created Date</div>
             <div className="table-cell">Actions</div>
@@ -256,9 +268,9 @@ export default function AreasPage() {
                 <div className="table-cell">{index + 1}</div>
                 <div className="table-cell">{area.nigra}</div>
                 <div className="table-cell">{area.area}</div>
+                <div className="table-cell">{area.zone}</div>
                 <div className="table-cell">{area.mobile}</div>
                 <div className="table-cell">{area.email || '-'}</div>
-                <div className="table-cell">{area.zone}</div>
                 <div className="table-cell">
                   <Switch
                     checked={area.published}

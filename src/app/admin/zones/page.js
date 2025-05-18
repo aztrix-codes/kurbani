@@ -5,6 +5,7 @@ import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX } from 'react-icons/fi';
 import { Switch } from '@headlessui/react';
 import axios from 'axios';
 import './zonesStyle.css';
+import { useRouter } from 'next/navigation';
 
 export default function ZonesPage() {
   const [zones, setZones] = useState([]);
@@ -20,6 +21,17 @@ export default function ZonesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState('');
+  const router = useRouter();
+  
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const isLogged = localStorage.getItem('adminLoggedIn') === 'false';
+    if (isLogged) {
+      // Redirect to admin dashboard if already logged in
+      router.replace('/auth/admin');
+    }
+  }, [router]);
 
   // Format date to "YYYY-MM-DD HH:MM am/pm" format
   const formatDate = (dateString) => {

@@ -5,6 +5,7 @@ import { FiEdit2, FiTrash2, FiPlus, FiSearch, FiX, FiUser } from 'react-icons/fi
 import { Switch } from '@headlessui/react';
 import axios from 'axios';
 import './usersStyle.css';
+import { useRouter } from 'next/navigation';
 
 export default function UserManagementPage() {
   const [areasList, setAreasList] = useState([]);
@@ -105,6 +106,17 @@ export default function UserManagementPage() {
       reader.readAsDataURL(file);
     }
   };
+  const router = useRouter();
+  
+
+  useEffect(() => {
+    // Check if user is already logged in
+    const isLogged = localStorage.getItem('adminLoggedIn') === 'false';
+    if (isLogged) {
+      // Redirect to admin dashboard if already logged in
+      router.replace('/auth/admin');
+    }
+  }, [router]);
 
   const filteredUsers = users.filter(user =>
     user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -281,10 +293,10 @@ export default function UserManagementPage() {
             <div className="table-cell">Sr No</div>
             <div className="table-cell">Profile</div>
             <div className="table-cell">Name</div>
+            <div className="table-cell">Area</div>
             <div className="table-cell">Phone</div>
             <div className="table-cell">Email</div>
             <div className="table-cell">Password</div>
-            <div className="table-cell">Area</div>
             <div className="table-cell">Approved</div>
             <div className="table-cell">Created Date</div>
             <div className="table-cell">Actions</div>
@@ -305,10 +317,10 @@ export default function UserManagementPage() {
                   </div>
                 </div>
                 <div className="table-cell">{user.name}</div>
+                <div className="table-cell">{user.area}</div>
                 <div className="table-cell">{user.phone}</div>
                 <div className="table-cell">{user.email}</div>
-                <div className="table-cell">••••••••</div>
-                <div className="table-cell">{user.area}</div>
+                <div className="table-cell">••••</div>
                 <div className="table-cell">
                   <Switch
                     checked={user.approved}
