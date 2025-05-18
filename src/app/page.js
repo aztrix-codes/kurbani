@@ -1,13 +1,16 @@
 'use client'
 
 import { useState } from "react";
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
   const [hoveredButton, setHoveredButton] = useState(null);
+  const router = useRouter();
 
   const handleNavigation = (path) => {
-    window.location.href = `/auth/${path}`;
-  };
+  router.push(`/auth/${path}`);
+};
+
 
   const styles = {
     mainContainer: {
