@@ -8,39 +8,66 @@ function UserLoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [redirect, setRedirect] = useState(false);
   const [buttonHovered, setButtonHovered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
 
+  // Check screen size for mobile responsiveness
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 768);
-    };
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
     handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Check if user is already logged in
   useEffect(() => {
-    if (redirect) {
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    if (userData?.isAuthenticated && userData?.status === 1) {
       router.replace('/user');
     }
-  }, [redirect, router]);
+  }, [router]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // Basic validation
+    if (!identifier || !password) {
+      setError('Please enter both identifier and password');
+      return;
+    }
+
     setIsLoading(true);
 
-    setTimeout(() => {
-      if (identifier && password) {
-        setRedirect(true);
+    try {
+      const response = await fetch(
+        `/api/users/user?phoneOrEmail=${encodeURIComponent(identifier)}&password=${encodeURIComponent(password)}`
+      );
+      
+      const data = await response.json();
+
+      if (response.ok) {
+        if (data.status === 1) {
+          // Store user data in localStorage
+          localStorage.setItem('userData', JSON.stringify({
+            userId: data.user_id,
+            isAuthenticated: true,
+            status: data.status,
+          }));
+          router.replace('/user');
+        } else {
+          setError('Your account is deactivated. Please contact support.');
+        }
       } else {
-        setError('Please enter both identifier and password');
+        setError(data.error || 'Login failed. Please try again.');
       }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Network error. Please try again.');
+    } finally {
       setIsLoading(false);
-    }, 800);
+    }
   };
 
   const styles = {
@@ -83,7 +110,6 @@ function UserLoginPage() {
       margin: isMobile ? '0 auto' : '0',
       transform: isMobile ? 'translateY(0)' : 'none'
     },
-    // Keep all your other style objects exactly the same
     leftPanelContent: {
       color: 'white',
       textAlign: 'center',
@@ -125,7 +151,8 @@ function UserLoginPage() {
       border: '1px solid #ddd',
       outline: 'none',
       transition: 'border-color 0.2s',
-      boxSizing: 'border-box'
+      boxSizing: 'border-box',
+      color: "#333",
     },
     submitButton: {
       width: '100%',
@@ -200,12 +227,14 @@ function UserLoginPage() {
           
           <form onSubmit={handleSubmit}>
             <div style={styles.formGroup}>
-              <label style={styles.formLabel} htmlFor="identifier">Username / Email / Phone</label>
+              <label style={styles.formLabel} htmlFor="identifier">
+                Email / Phone
+              </label>
               <input
                 style={styles.formInput}
                 type="text"
                 id="identifier"
-                placeholder="Enter your username, email, or phone"
+                placeholder="Enter your email or phone"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value.replace(/\s/g, ''))}
                 required
@@ -213,7 +242,9 @@ function UserLoginPage() {
             </div>
             
             <div style={styles.formGroup}>
-              <label style={styles.formLabel} htmlFor="password">Password</label>
+              <label style={styles.formLabel} htmlFor="password">
+                Password
+              </label>
               <input
                 style={styles.formInput}
                 type="password"

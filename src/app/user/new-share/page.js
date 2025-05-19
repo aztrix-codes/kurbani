@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import './style.css';
+import { useRouter } from 'next/navigation';
 
 const hissaOptions = [
   { value: "", label: "SELECT" },
@@ -9,6 +10,20 @@ const hissaOptions = [
   { value: "aqeeqah_boy", label: "Aqeeqah (Boy - 02 Hissa)", hissaCount: 2 },
   { value: "aqeeqah_girl", label: "Aqeeqah (Girl - 01 Hissa)", hissaCount: 1 }
 ];
+
+const router = useRouter() 
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    if (
+      userData &&
+      userData.userId === 0 &&
+      userData.isAuthenticated === false &&
+      userData.status === 0
+    ) {
+      router.replace('/auth/user');
+    }
+  }, [router]);
 
 export default function QurbaniApp() {
   const [hissaCards, setHissaCards] = useState([

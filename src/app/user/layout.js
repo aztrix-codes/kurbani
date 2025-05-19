@@ -17,6 +17,15 @@ export default function DashboardLayout({ children }) {
     router.replace('/user');
   };
 
+  const handleLogout = () => {
+    localStorage.setItem('userData', JSON.stringify({
+      userId: 0,
+      isAuthenticated: false,
+      status: 0,
+    }));
+    router.replace('/auth/user');
+  };
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
@@ -44,7 +53,7 @@ export default function DashboardLayout({ children }) {
                 <span className="username">{user.name}</span>
               </div>
             </div>
-            <button className="logout-button">
+            <button className="logout-button" onClick={handleLogout}>
               <img 
                 src='https://img.icons8.com/?size=100&id=59995&format=png&color=ffffff' 
                 style={{ width: '1.8rem' }} 

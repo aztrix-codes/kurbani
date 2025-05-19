@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Search, FileSpreadsheet, ArrowUpDown, Edit, Trash2, Check, X } from 'lucide-react';
 import './style.css'
+import { useRouter } from 'next/navigation';
 
 export default function DataTable() {
   const [data, setData] = useState([
@@ -21,6 +22,20 @@ export default function DataTable() {
   const [filteredData, setFilteredData] = useState(data);
   const [editingId, setEditingId] = useState(null);
   const [editedName, setEditedName] = useState('');
+
+  const router = useRouter() 
+  
+    useEffect(() => {
+      const userData = JSON.parse(localStorage.getItem('userData'));
+      if (
+        userData &&
+        userData.userId === 0 &&
+        userData.isAuthenticated === false &&
+        userData.status === 0
+      ) {
+        router.replace('/auth/user');
+      }
+    }, [router]);
 
   // Handle search functionality
   useEffect(() => {

@@ -2,6 +2,7 @@
 import React, { useState } from 'react'
 import { Phone, Mail, MapPin, Clock, Send, CheckCircle } from 'lucide-react'
 import './style.css'
+import { useRouter } from 'next/navigation';
 
 function ContactPage() {
   const [formSubmitted, setFormSubmitted] = useState(false);
@@ -11,6 +12,20 @@ function ContactPage() {
     subject: '',
     message: ''
   });
+
+  const router = useRouter() 
+  
+    useEffect(() => {
+      const userData = JSON.parse(localStorage.getItem('userData'));
+      if (
+        userData &&
+        userData.userId === 0 &&
+        userData.isAuthenticated === false &&
+        userData.status === 0
+      ) {
+        router.replace('/auth/user');
+      }
+    }, [router]);
 
   const handleChange = (e) => {
     const { id, value } = e.target;

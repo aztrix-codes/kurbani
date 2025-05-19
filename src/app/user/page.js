@@ -1,8 +1,9 @@
 'use client'
-import React from "react";
+import React, { useEffect } from "react";
 import Link from "next/link";
 import { Briefcase, PlusCircle, CreditCard, Clock, FileText, Users, MessageCircle, Info } from "lucide-react";
 import "./userPage.css";
+import { useRouter } from "next/navigation";
 
 function Page() {
   const menuItems = [
@@ -15,6 +16,20 @@ function Page() {
     { title: "About us", icon: <Info className="tile-icon" />, href: "/user/about-us" },
     { title: "Contact us", icon: <MessageCircle className="tile-icon" />, href: "/user/contact-us" }
   ];
+
+  const router = useRouter() 
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    if (
+      userData &&
+      userData.userId === 0 &&
+      userData.isAuthenticated === false &&
+      userData.status === 0
+    ) {
+      router.replace('/auth/user');
+    }
+  }, [router]);
 
   return (
     <div className="page-container">      
