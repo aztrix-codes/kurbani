@@ -171,7 +171,7 @@
 .table-heads .table-cell:nth-child(7)  { width: 5%; justify-content: center; justify-content: center; text-align: center; } /* Published */
 .table-heads .table-cell:nth-child(8)  { width: 10%; text-wrap: wrap; justify-content: center; text-align: center;} /* Created Date */
 .table-heads .table-cell:nth-child(9) {width: 10%; justify-content: center;justify-content: center; text-align: center;} /* Actions */
-.table-heads .table-cell:nth-child(10) {width: 10%; justify-content: center;justify-content: center; text-align: center;} /* Actions */
+.table-heads .table-cell:nth-child(10) {width: 10%; justify-content: center;  text-align: center;} /* Actions */
 
  .table-body .table-cell:nth-child(1) { width: 6%; text-wrap: wrap; justify-content: center; text-align: center;}  /* Sr no */
  .table-body .table-cell:nth-child(2) { width: 5%; text-wrap: wrap; justify-content: center;} /* Nigra */
