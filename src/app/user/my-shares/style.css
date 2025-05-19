@@ -143,51 +143,14 @@ justify-content: center;
 text-align: center;
 }
 
-/* Toggle Switch Styles */
-.toggle-switch {
-display: inline-flex;
-align-items: center;
-width: 44px;
-height: 24px;
-border-radius: 9999px;
-background-color: #e0e0e0;
-position: relative;
-transition: background-color 0.2s ease;
-cursor: pointer;
-border: none;
-padding: 0;
-outline: none;
-}
-
-.toggle-switch.on {
-background-color: #4caf50;
-}
-
-.switch-thumb {
-width: 20px;
-height: 20px;
-background: white;
-border-radius: 9999px;
-position: absolute;
-left: 2px;
-transition: transform 0.2s ease;
-box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
-}
-
-.toggle-switch.on .switch-thumb {
-transform: translateX(20px);
-}
-
 /* "Sent" status style */
 .sent-status {
-/* background-color: #4caf4f3f; */
 color: #4caf50;
 padding: 4px 10px;
 border-radius: 1rem;
 font-size: 0.8rem;
 font-weight: bold;
 text-align: center;
-/* border: 1px solid #4caf50; */
 letter-spacing: 1px;
 }
 
@@ -219,9 +182,52 @@ transition: all 0.2s ease;
 .edit-button {
 color: #2196f3;
 }
+
 .delete-button {
 color: #f44336;
 }
+
+/* Name editing styles */
+.name-edit-container {
+display: flex;
+align-items: center;
+width: 100%;
+}
+
+.name-edit-input {
+flex: 1;
+padding: 0.25rem 0.5rem;
+border: 1px solid #4caf50;
+border-radius: 4px;
+font-size: 0.9rem;
+}
+
+.edit-actions {
+display: flex;
+gap: 4px;
+}
+
+.edit-action-button {
+display: flex;
+align-items: center;
+justify-content: center;
+width: 24px;
+height: 24px;
+border-radius: 4px;
+border: none;
+cursor: pointer;
+}
+
+.save-button {
+color: #4caf50;
+}
+
+.cancel-button {
+color: #f44336;
+}
+
+/* Status button */
+/* Removed status button styles as it's no longer needed */
 
 /* Responsive Styles */
 @media (max-width: 1024px) {
@@ -248,20 +254,6 @@ color: #f44336;
     width: 360%;
   }
   
-  .toggle-switch {
-    width: 38px;
-    height: 20px;
-  }
-  
-  .switch-thumb {
-    width: 16px;
-    height: 16px;
-  }
-  
-  .toggle-switch.on .switch-thumb {
-    transform: translateX(16px);
-  }
-  
   .actions-cell {
     gap: 4px;
   }
@@ -269,5 +261,18 @@ color: #f44336;
   .action-button {
     width: 24px;
     height: 24px;
+  }
+  
+  .name-edit-input {
+    font-size: 0.8rem;
+  }
+  
+  .edit-actions {
+    gap: 2px;
+  }
+  
+  .edit-action-button {
+    width: 20px;
+    height: 20px;
   }
 }
