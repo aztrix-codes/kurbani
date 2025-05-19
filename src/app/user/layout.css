@@ -63,7 +63,7 @@
           .dashboard-main {
             flex: 1;
             width: 100%;
-            background-color: whitesmoke;
+            background-color: #f8fafc;
           }
 
           @media (max-width: 768px) {
