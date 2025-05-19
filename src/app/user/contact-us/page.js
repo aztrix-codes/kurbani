@@ -121,7 +121,7 @@ function ContactPage() {
                 <div className="form-success">
                   <CheckCircle size={50} className="success-icon" />
                   <h3>Message Sent!</h3>
-                  <p>We'll get back to you as soon as possible.</p>
+                  <p>We will get back to you as soon as possible.</p>
                 </div>
               ) : (
                 <>
