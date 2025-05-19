@@ -14,7 +14,7 @@ function AdminLoginPage() {
   useEffect(() => {
     const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
     if (isLoggedIn) {
-      router.push('/admin/zones');
+      router.replace('/admin/zones');
     }
   }, [router]);
 

@@ -24,7 +24,7 @@ function UserLoginPage() {
 
   useEffect(() => {
     if (redirect) {
-      router.push('/user');
+      router.replace('/user');
     }
   }, [redirect, router]);
 
