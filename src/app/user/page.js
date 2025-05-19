@@ -26,6 +26,12 @@ function Page() {
           <div  className="tile">
             <h3 className="tile-title">My invoice</h3>
           </div>
+          <div  className="tile">
+            <h3 className="tile-title">About us</h3>
+          </div>
+          <div  className="tile">
+            <h3 className="tile-title">Contact us</h3>
+          </div>
       </div>
     </div>
   );

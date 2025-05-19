@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react';
-import { Search, FileSpreadsheet, ArrowUpDown } from 'lucide-react';
+import { Search, FileSpreadsheet, ArrowUpDown, Edit, Trash2 } from 'lucide-react';
 import './style.css'
 
 // Custom Toggle Switch Component
@@ -43,6 +43,8 @@ export default function DataTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const [filteredData, setFilteredData] = useState(data);
+  const [editingId, setEditingId] = useState(null);
+  const [editTimer, setEditTimer] = useState(null);
 
   // Handle search functionality
   useEffect(() => {
@@ -86,12 +88,52 @@ export default function DataTable() {
       return item;
     });
     setData(newData);
+    
+    // Clear the editing state immediately after toggle
+    setEditingId(null);
+    if (editTimer) {
+      clearTimeout(editTimer);
+      setEditTimer(null);
+    }
+  };
+  
+  // Handle edit button click - show toggle for 3 seconds
+  const handleEditClick = (id) => {
+    // Clear any existing timer
+    if (editTimer) {
+      clearTimeout(editTimer);
+    }
+    
+    // Set the current item to editing mode
+    setEditingId(id);
+    
+    // Set a timer to exit edit mode after 3 seconds
+    const timer = setTimeout(() => {
+      setEditingId(null);
+    }, 3000);
+    
+    setEditTimer(timer);
+  };
+  
+  // Handle delete functionality
+  const handleDelete = (id) => {
+    const newData = data.filter(item => item.id !== id);
+    setData(newData);
   };
 
   // Export to Excel (placeholder function)
   const exportToExcel = () => {
     alert("Export to Excel functionality would be implemented here");
   };
+  
+  // Clean up timer on component unmount
+  useEffect(() => {
+    return () => {
+      if (editTimer) {
+        clearTimeout(editTimer);
+      }
+    };
+  }, [editTimer]);
 
   return (
     <div className="fixed-color-theme flex flex-col p-4 max-w-full min-h-screen">
@@ -158,7 +200,7 @@ export default function DataTable() {
                 </div>
                 <div className="table-cell">
                   <span className="flex items-center justify-center">
-                    Status
+                    Actions
                   </span>
                 </div>
               </div>
@@ -173,11 +215,34 @@ export default function DataTable() {
                       <div className="table-cell">{item.type}</div>
                       <div className="table-cell">{item.zone}</div>
                       <div className="table-cell actions-cell">
-                        <ToggleSwitch
-                          checked={item.status}
-                          onChange={() => handleStatusToggle(item.id)}
-                          disabled={item.status}
-                        />
+                        {item.status ? (
+                          <div className="sent-status">Sent</div>
+                        ) : (
+                          editingId === item.id ? (
+                            <ToggleSwitch
+                              checked={item.status}
+                              onChange={() => handleStatusToggle(item.id)}
+                              disabled={item.status}
+                            />
+                          ) : (
+                            <div className="action-buttons">
+                              <button 
+                                className="action-button edit-button"
+                                onClick={() => handleEditClick(item.id)}
+                                title="Edit"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button 
+                                className="action-button delete-button"
+                                onClick={() => handleDelete(item.id)}
+                                title="Delete"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          )
+                        )}
                       </div>
                     </div>
                   ))
