@@ -23,7 +23,8 @@ export default function QurbaniApp() {
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter();
-  const [zones, setZones] = useState([])
+  const [zones, setZones] = useState(['Out of Mumbai', 'Mumbai'])
+  
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userData'));
     if (
@@ -34,27 +35,6 @@ export default function QurbaniApp() {
       router.replace('/auth/user');
     }
     
-    // Fetch zones from API
-    const fetchZones = async () => {
-      try {
-        setIsLoading(true);
-        const response = await axios.get('/api/zones');
-        const data = response.data;
-        setZones(data);
-        
-        // Set the default location to the first zone if available
-        if (data.length > 0) {
-          setLocation(data[0].zone_name);
-        }
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching zones:', error);
-        setIsLoading(false);
-      }
-    };
-    
-    fetchZones();
   }, [router]);
 
   // Generate spl_id based on name and timestamp
@@ -268,8 +248,8 @@ export default function QurbaniApp() {
               <option>Loading zones...</option>
             ) : zones.length > 0 ? (
               zones.map((zone,index) => (
-                <option key={index} value={zone.zone_name}>
-                  {zone.zone_name}
+                <option key={index} value={zone}>
+                  {zone}
                 </option>
               ))
             ) : (
