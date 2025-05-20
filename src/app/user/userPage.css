@@ -1,10 +1,16 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
 
 .page-container {
-  max-height: 100vh;
+  height: 100%;
   background-color: #f8fafc;
   padding: 2rem;
   font-family: 'Inter', sans-serif;
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  left: 0;
+  top: 0;
+  padding-top: 10vh;
 }
 
 .page-title {
@@ -77,6 +83,7 @@
   }
   .page-container {
     padding: 1.5rem;
+    padding-top: 4rem;
   }
   .page-title {
     font-size: 1.5rem;

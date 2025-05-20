@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation';
-import React from 'react'
+import React, { useEffect } from 'react'
 
 function page() {
 
@@ -10,7 +10,6 @@ function page() {
     useEffect(() => {
       const userData = JSON.parse(localStorage.getItem('userData'));
       if (
-        userData &&
         userData.userId === 0 &&
         userData.isAuthenticated === false &&
         userData.status === 0

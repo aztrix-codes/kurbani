@@ -3,45 +3,98 @@ import { useState, useEffect } from 'react';
 import { Search, FileSpreadsheet, ArrowUpDown, Edit, Trash2, Check, X } from 'lucide-react';
 import './style.css'
 import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 export default function DataTable() {
-  const [data, setData] = useState([
-    { id: 1, receipt: 28365, name: "John Smith", type: "qurbani", zone: "out of mumbai", status: false },
-    { id: 2, receipt: 39471, name: "Sarah Johnson", type: "sadaqah", zone: "mumbai", status: false },
-    { id: 3, receipt: 47295, name: "Ahmed Khan", type: "qurbani", zone: "out of mumbai", status: true },
-    { id: 4, receipt: 58302, name: "Priya Patel", type: "zakat", zone: "mumbai", status: false },
-    { id: 5, receipt: 61947, name: "Michael Brown", type: "sadaqah", zone: "out of mumbai", status: false },
-    { id: 6, receipt: 73026, name: "Fatima Ali", type: "qurbani", zone: "mumbai", status: true },
-    { id: 7, receipt: 84159, name: "David Chen", type: "zakat", zone: "out of mumbai", status: false },
-    { id: 8, receipt: 92748, name: "Aisha Rahman", type: "sadaqah", zone: "mumbai", status: false },
-    { id: 9, receipt: 10384, name: "James Wilson", type: "qurbani", zone: "out of mumbai", status: true },
-    { id: 10, receipt: 11526, name: "Leila Hassan", type: "zakat", zone: "mumbai", status: true }
-  ]);
+  const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
-  const [filteredData, setFilteredData] = useState(data);
+  const [filteredData, setFilteredData] = useState([]);
   const [editingId, setEditingId] = useState(null);
   const [editedName, setEditedName] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const router = useRouter() 
+  const router = useRouter();
   
-    useEffect(() => {
-      const userData = JSON.parse(localStorage.getItem('userData'));
-      if (
-        userData &&
-        userData.userId === 0 &&
-        userData.isAuthenticated === false &&
-        userData.status === 0
-      ) {
-        router.replace('/auth/user');
+
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    if (
+      userData.userId === 0 &&
+      userData.isAuthenticated === false &&
+      userData.status === 0
+    ) {
+      router.replace('/auth/user');
+    } else {
+      fetchData();
+    }
+  }, [router]);
+
+     const exportToExcel = () => {
+    try {
+      const dataToExport = filteredData.filter(item => item.status === 1);
+      
+      if (dataToExport.length === 0) {
+        alert("No records with 'Sent' status found to export.");
+        return;
       }
-    }, [router]);
+      
+      const excelData = dataToExport.map(item => ({
+        'Sr No.': item.id,
+        'Receipt No.': item.recipt,
+        'Name': item.name,
+        'Type': item.type,
+        'Zone': item.zone,
+        'Phone': item.phone || '',
+        'Status': 'Sent' // Show "Sent" for status column
+      }));
+      
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
+      
+      XLSX.writeFile(workbook, 'records_export.xlsx');
+      
+      console.log('Excel file exported successfully');
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      alert('Failed to export data to Excel');
+    }
+  };
+
+
+  // Fetch data from API
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const userData = JSON.parse(localStorage.getItem('userData'));
+      const userId = userData?.userId;
+      
+      if (!userId) {
+        throw new Error('User ID not found');
+      }
+
+      const response = await axios.get(`/api/customers?user_id=${userId}`);
+      setData(response.data);
+      setFilteredData(response.data);
+    } catch (err) {
+      setError(err.message);
+      console.error('Error fetching data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  console.log(data)
 
   // Handle search functionality
   useEffect(() => {
     const results = data.filter(item => 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.receipt.toString().includes(searchTerm) ||
+      item.recipt.includes(searchTerm) ||
       item.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.zone.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -76,16 +129,32 @@ export default function DataTable() {
   };
   
   // Save edited name
-  const saveEditedName = (id) => {
-    const newData = data.map(item => {
-      if (item.id === id) {
-        return { ...item, name: editedName };
-      }
-      return item;
-    });
-    setData(newData);
-    setEditingId(null);
-    setEditedName('');
+  const saveEditedName = async (id) => {
+    try {
+      const itemToUpdate = data.find(item => item.id === id);
+      if (!itemToUpdate) return;
+
+      await axios.put('/api/customers', {
+        user_id: itemToUpdate.user_id,
+        spl_id: itemToUpdate.spl_id,
+        name: editedName
+      });
+
+      // Update local state
+      const newData = data.map(item => {
+        if (item.id === id) {
+          return { ...item, name: editedName };
+        }
+        return item;
+      });
+      
+      setData(newData);
+      setEditingId(null);
+      setEditedName('');
+    } catch (err) {
+      console.error('Error updating name:', err);
+      alert('Failed to update name');
+    }
   };
   
   // Cancel editing
@@ -95,15 +164,47 @@ export default function DataTable() {
   };
   
   // Handle delete functionality
-  const handleDelete = (id) => {
-    const newData = data.filter(item => item.id !== id);
-    setData(newData);
+  const handleDelete = async (id) => {
+    if (!confirm('Are you sure you want to delete this record?')) return;
+
+    try {
+      const itemToDelete = data.find(item => item.id === id);
+      if (!itemToDelete) return;
+
+      await axios.delete('/api/customers', {
+        data: {
+          user_id: itemToDelete.user_id,
+          spl_id: itemToDelete.spl_id
+        }
+      });
+
+      // Update local state
+      const newData = data.filter(item => item.id !== id);
+      setData(newData);
+    } catch (err) {
+      console.error('Error deleting record:', err);
+      alert('Failed to delete record');
+    }
   };
 
-  // Export to Excel (placeholder function)
-  const exportToExcel = () => {
-    alert("Export to Excel functionality would be implemented here");
-  };
+
+  if (isLoading) {
+    return (
+      <div className="fixed-color-theme flex flex-col p-4 max-w-full min-h-screen">
+        <div className="flex items-center justify-center h-full">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="fixed-color-theme flex flex-col p-4 max-w-full min-h-screen">
+        <div className="text-red-500 text-center p-8">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed-color-theme flex flex-col p-4 max-w-full min-h-screen">
@@ -168,6 +269,11 @@ export default function DataTable() {
                     Zone <ArrowUpDown size={14} />
                   </span>
                 </div>
+                <div className="table-cell cursor-pointer">
+                  <span className="flex items-center justify-center">
+                    Phone
+                  </span>
+                </div>
                 <div className="table-cell">
                   <span className="flex items-center justify-center">
                     Actions
@@ -180,7 +286,7 @@ export default function DataTable() {
                   filteredData.map((item) => (
                     <div className="table-body-item" key={item.id}>
                       <div className="table-cell">{item.id}</div>
-                      <div className="table-cell">{item.receipt}</div>
+                      <div className="table-cell">{item.recipt}</div>
                       <div className="table-cell">
                         {editingId === item.id ? (
                           <div className="name-edit-container">
@@ -198,6 +304,7 @@ export default function DataTable() {
                       </div>
                       <div className="table-cell">{item.type}</div>
                       <div className="table-cell">{item.zone}</div>
+                      <div className="table-cell">{item?.phone}</div>
                       <div className="table-cell actions-cell">
                         {item.status ? (
                           <div className="sent-status">Sent</div>

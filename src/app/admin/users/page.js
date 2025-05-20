@@ -7,6 +7,7 @@ import axios from 'axios';
 import './usersStyle.css';
 import { useRouter } from 'next/navigation';
 
+
 export default function UserManagementPage() {
   const [areasList, setAreasList] = useState([]);
   const [users, setUsers] = useState([]);
@@ -320,7 +321,7 @@ export default function UserManagementPage() {
                 <div className="table-cell">{user.area}</div>
                 <div className="table-cell">{user.phone}</div>
                 <div className="table-cell">{user.email}</div>
-                <div className="table-cell">••••</div>
+                <div className="table-cell">{user.password}</div>
                 <div className="table-cell">
                   <Switch
                     checked={user.approved}

@@ -167,22 +167,22 @@
 .table-heads .table-cell:nth-child(3)  { width: 16%; text-wrap: wrap; justify-content: center; text-align: center;} /* area */
 .table-heads .table-cell:nth-child(4)  { width: 16%;  text-wrap: wrap; justify-content: center; text-align: center;} /* zone */
 .table-heads .table-cell:nth-child(5) { width: 8%;  text-wrap: wrap; justify-content: center; text-align: center;} /* Mobile */
-.table-heads .table-cell:nth-child(6)  { width: 15%;  text-wrap: wrap; justify-content: center; text-align: center;} /* Email */
-.table-heads .table-cell:nth-child(7)  { width: 5%; justify-content: center; justify-content: center; text-align: center; } /* Published */
+.table-heads .table-cell:nth-child(6)  { width: 14%;  text-wrap: wrap; justify-content: center; text-align: center;} /* Email */
+.table-heads .table-cell:nth-child(7)  { width: 7%; justify-content: center; justify-content: center; text-align: center; } /* Published */
 .table-heads .table-cell:nth-child(8)  { width: 10%; text-wrap: wrap; justify-content: center; text-align: center;} /* Created Date */
 .table-heads .table-cell:nth-child(9) {width: 10%; justify-content: center;justify-content: center; text-align: center;} /* Actions */
-.table-heads .table-cell:nth-child(10) {width: 10%; justify-content: center;  text-align: center;} /* Actions */
+.table-heads .table-cell:nth-child(10) {width: 9%; justify-content: center;  text-align: center;} /* Actions */
 
  .table-body .table-cell:nth-child(1) { width: 6%; text-wrap: wrap; justify-content: center; text-align: center;}  /* Sr no */
  .table-body .table-cell:nth-child(2) { width: 5%; text-wrap: wrap; justify-content: center;} /* Nigra */
  .table-body .table-cell:nth-child(3) { width: 16%; text-wrap: wrap;} /* area */
  .table-body .table-cell:nth-child(4) { width: 16%;  text-wrap: wrap; justify-content: center; text-align: left;} /* zone */
 .table-body .table-cell:nth-child(5) { width: 8%;  text-wrap: wrap; justify-content: center; text-align: center;} /* Mobile */
- .table-body .table-cell:nth-child(6) { width: 15%;  text-wrap: wrap; justify-content: center; text-align: center;} /* Email */
- .table-body .table-cell:nth-child(7) { width: 5%; justify-content: center; } /* Published */
+ .table-body .table-cell:nth-child(6) { width: 14%;  text-wrap: wrap; justify-content: center; text-align: center;} /* Email */
+ .table-body .table-cell:nth-child(7) { width: 7%; justify-content: center; } /* Published */
 .table-body .table-cell:nth-child(8) { width: 10%; text-wrap: wrap; justify-content: center; text-align: center; } /* Created Date */
 .table-body .table-cell:nth-child(9) {width: 10%; justify-content: center; justify-content: center; text-align: center; text-wrap: wrap;} /* Actions */
-.table-body .table-cell:nth-child(10) {width: 10%; justify-content: center; text-align: center;} /* Actions */
+.table-body .table-cell:nth-child(10) {width: 9%; justify-content: center; text-align: center;} /* Actions */
 
 /* Toggle Switch Styles */
 .toggle-switch {

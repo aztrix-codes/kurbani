@@ -22,7 +22,6 @@ function Page() {
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userData'));
     if (
-      userData &&
       userData.userId === 0 &&
       userData.isAuthenticated === false &&
       userData.status === 0

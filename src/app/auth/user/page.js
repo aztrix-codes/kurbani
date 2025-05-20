@@ -46,6 +46,7 @@ function UserLoginPage() {
       );
       
       const data = await response.json();
+      console.log(data)
 
       if (response.ok) {
         if (data.status === 1) {
@@ -54,6 +55,8 @@ function UserLoginPage() {
             userId: data.user_id,
             isAuthenticated: true,
             status: data.status,
+            name: data.username,
+            img: data.img_url
           }));
           router.replace('/user');
         } else {

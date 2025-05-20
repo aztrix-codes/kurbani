@@ -21,7 +21,7 @@ export async function GET(request) {
     
     // Query the database to find a user with matching credentials
     const [rows] = await pool.query(
-      `SELECT user_id, status FROM users WHERE 
+      `SELECT user_id, status, username, img_url FROM users WHERE 
        (${isEmail ? 'email' : 'phone'} = ?) AND password = ?`,
       [phoneOrEmail, password]
     );
@@ -39,7 +39,9 @@ export async function GET(request) {
     return new Response(JSON.stringify({
       success: true,
       user_id: rows[0].user_id,
-      status: rows[0].status
+      status: rows[0].status,
+      username: rows[0].username,
+      img_url: rows[0].img_url
     }), {
       headers: { 'Content-Type': 'application/json' },
       status: 200

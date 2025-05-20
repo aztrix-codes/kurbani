@@ -1,5 +1,5 @@
 'use client'
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Phone, Mail, MapPin, Clock, Send, CheckCircle } from 'lucide-react'
 import './style.css'
 import { useRouter } from 'next/navigation';
@@ -18,7 +18,6 @@ function ContactPage() {
     useEffect(() => {
       const userData = JSON.parse(localStorage.getItem('userData'));
       if (
-        userData &&
         userData.userId === 0 &&
         userData.isAuthenticated === false &&
         userData.status === 0
