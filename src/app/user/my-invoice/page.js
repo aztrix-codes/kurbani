@@ -20,7 +20,7 @@ function page() {
 
   return (
     <div>
-      
+      my invoice
     </div>
   )
 }
