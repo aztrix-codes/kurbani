@@ -1,26 +1,9 @@
-'use client'
-
-import { useRouter } from 'next/navigation';
-import React, { useEffect } from 'react'
+import React from 'react'
 
 function page() {
-
-  const router = useRouter() 
-  
-    useEffect(() => {
-      const userData = JSON.parse(localStorage.getItem('userData'));
-      if (
-        userData.userId === 0 &&
-        userData.isAuthenticated === false &&
-        userData.status === 0
-      ) {
-        router.replace('/auth/user');
-      }
-    }, [router]);
-
   return (
     <div>
-      my invoice
+      
     </div>
   )
 }
