@@ -45,7 +45,7 @@ function Page() {
     { title: "Total paid", icon: <CreditCard className="tile-icon" />, href: "#", amount: `(₹${40000})`, count: 0 },
     { title: "Total pending", icon: <Clock className="tile-icon" />, href: "#", amount: `(₹${60000})`, count: 0 },
     { title: "My invoice", icon: <FileText className="tile-icon" />, href: "/user/my-invoice" },
-    { title: "About us", icon: <Info className="tile-icon" />, href: "/user/about-us" },
+    { title: "User Guidelines", icon: <Info className="tile-icon" />, href: "/user/guidelines" },
     { title: "Contact us", icon: <MessageCircle className="tile-icon" />, href: "/user/contact-us" }
   ];
 
