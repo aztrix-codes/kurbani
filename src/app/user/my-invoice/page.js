@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, ArrowLeft, Printer, Search } from 'lucide-react';
+import { Download, ArrowLeft, Printer, Search, X } from 'lucide-react';
 import axios from 'axios';
 import { jsPDF } from 'jspdf';
 import './style.css';

@@ -39,7 +39,7 @@ export default function GuidelinesPage() {
           <div className="bg-green-50 px-6 py-4 border-b border-green-100">
             <h2 className="text-xl font-semibold text-green-800 flex items-center">
               <CheckCircle2 className="mr-2 text-green-600" size={20} />
-              Do's
+              Do&apos;s
             </h2>
           </div>
           <div className="p-6">
@@ -77,30 +77,30 @@ export default function GuidelinesPage() {
           <div className="bg-red-50 px-6 py-4 border-b border-red-100">
             <h2 className="text-xl font-semibold text-red-800 flex items-center">
               <XCircle className="mr-2 text-red-600" size={20} />
-              Don'ts
+              Don&apos;ts
             </h2>
           </div>
           <div className="p-6">
             <ul className="space-y-4">
               <li className="flex items-start">
                 <XCircle className="mt-1 mr-3 text-red-500 flex-shrink-0" size={18} />
-                <span className="text-gray-700">Don't exceed the 7 Hissa limit per receipt</span>
+                <span className="text-gray-700">Don&apos;t exceed the 7 Hissa limit per receipt</span>
               </li>
               <li className="flex items-start">
                 <XCircle className="mt-1 mr-3 text-red-500 flex-shrink-0" size={18} />
-                <span className="text-gray-700">Don't use abbreviations for names</span>
+                <span className="text-gray-700">Don&apos;t use abbreviations for names</span>
               </li>
               <li className="flex items-start">
                 <XCircle className="mt-1 mr-3 text-red-500 flex-shrink-0" size={18} />
-                <span className="text-gray-700">Don't leave required fields blank</span>
+                <span className="text-gray-700">Don&apos;t leave required fields blank</span>
               </li>
               <li className="flex items-start">
                 <XCircle className="mt-1 mr-3 text-red-500 flex-shrink-0" size={18} />
-                <span className="text-gray-700">Don't share your login credentials</span>
+                <span className="text-gray-700">Don&apos;t share your login credentials</span>
               </li>
               <li className="flex items-start">
                 <XCircle className="mt-1 mr-3 text-red-500 flex-shrink-0" size={18} />
-                <span className="text-gray-700">Don't use the system on public computers without logging out</span>
+                <span className="text-gray-700">Don&apos;t use the system on public computers without logging out</span>
               </li>
             </ul>
           </div>
