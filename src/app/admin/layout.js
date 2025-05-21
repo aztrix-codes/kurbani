@@ -27,7 +27,6 @@ export default function AdminLayout({ children }) {
 
   return (
     <div className="admin-container" suppressHydrationWarning>
-      {/* Desktop Sidebar - Redesigned */}
       <nav className="wide-nav">
         <div className="nav-header">
           <h1>Admin Panel</h1>
@@ -57,17 +56,17 @@ export default function AdminLayout({ children }) {
         <button className="hamburger" onClick={toggleMobileNav}>
           <img src='https://img.icons8.com/?size=100&id=36389&format=png&color=ffffff' style={{width: '2rem', height: '1.8rem'}} />
         </button>
-        <div className="mobile-header-content">
+          <h1>Admin Panel</h1>   
+      </header>
+
+      {/* Rest of the components remain the same */}
+      <div className={`mobile-nav ${mobileNavOpen ? 'open' : ''}`}>
+        <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginBottom: '1.5rem', paddingBottom: "1rem", borderBottom: '1px solid rgba(255,255,255, .4)', position: 'relative', padding: '0rem 2rem 1rem 2rem', alignItems: 'center'}}>
           <h1>Admin Panel</h1>
           <div onClick={logout}> 
             <img src='https://img.icons8.com/?size=100&id=59995&format=png&color=ffffff' style={{width: '1.8rem'}} /> 
           </div>
         </div>
-      </header>
-
-      {/* Rest of the components remain the same */}
-      <div className={`mobile-nav ${mobileNavOpen ? 'open' : ''}`}>
-        <h1>Admin Panel</h1>
         <div className='nav-items'>
           {links.map((link, index) => (
             <Link onClick={() => setMobileNavOpen(false)}
