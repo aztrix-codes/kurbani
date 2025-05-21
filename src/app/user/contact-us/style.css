@@ -162,7 +162,7 @@
 .form-label {
   display: block;
   margin-bottom: 8px;
-  font-size: 0.95rem;
+  font-size: 1.8rem;
   font-weight: 500;
 }
 
@@ -189,7 +189,8 @@
 }
 
 textarea.form-input {
-  min-height: 140px;
+  min-height: 180px;
+  max-height: 55vh;
   resize: vertical;
 }
 
@@ -272,5 +273,99 @@ textarea.form-input {
   
   .contact-header h1 {
     font-size: 2rem;
+  }
+}
+
+
+
+/* Additional styles for the feedback form */
+
+.feedback-user {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 25px;
+  border-left: 4px solid var(--accent-color);
+}
+
+.feedback-user-info {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.user-greeting {
+  font-size: 1.05rem;
+  opacity: 0.85;
+  margin-right: 5px;
+}
+
+.user-name {
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.error-message {
+  background: rgba(220, 53, 69, 0.15);
+  color: #ffcccb;
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+  border-left: 3px solid #dc3545;
+}
+
+.submit-btn.loading {
+  background: #d9a639;
+  opacity: 0.8;
+  cursor: not-allowed;
+}
+
+.loading-text {
+  display: inline-flex;
+  align-items: center;
+}
+
+.loading-text:before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  margin-right: 12px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+  border-top-color: var(--dark-text);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+textarea.form-input {
+  min-height: 180px;
+}
+
+.char-counter {
+  display: flex;
+  justify-content: flex-end;
+  font-size: 1rem;
+  opacity: 0.8;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.char-limit-warning {
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Mobile optimization for feedback form */
+@media (max-width: 768px) {
+  .feedback-user {
+    padding: 12px;
+  }
+  
+  textarea.form-input {
+    min-height: 150px;
   }
 }

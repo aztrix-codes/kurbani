@@ -6,59 +6,97 @@ import { useRouter } from 'next/navigation';
 
 function ContactPage() {
   const [formSubmitted, setFormSubmitted] = useState(false);
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    subject: '',
-    message: ''
-  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [userData, setUserData] = useState({ name: '', userId: 0, isAuthenticated: false, status: 0 });
+  const [feedback, setFeedback] = useState('');
+  const [charCount, setCharCount] = useState(0);
+  const MAX_CHARS = 3000; // Maximum characters allowed
 
-  const router = useRouter() 
+  const router = useRouter();
   
-    useEffect(() => {
-      const userData = JSON.parse(localStorage.getItem('userData'));
-      if (
-        userData.userId === 0 &&
-        userData.isAuthenticated === false &&
-        userData.status === 0
-      ) {
-        router.replace('/auth/user');
+  useEffect(() => {
+    // Get user data from localStorage
+    try {
+      const storedUserData = JSON.parse(localStorage.getItem('userData'));
+      if (storedUserData) {
+        setUserData(storedUserData);
+        
+        // Redirect if user is not authenticated
+        if (
+          storedUserData.userId === 0 &&
+          storedUserData.isAuthenticated === false &&
+          storedUserData.status === 0
+        ) {
+          router.replace('/auth/user');
+        }
       }
-    }, [router]);
+    } catch (error) {
+      console.error('Error accessing localStorage:', error);
+    }
+  }, [router]);
 
-  const handleChange = (e) => {
-    const { id, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [id]: value
-    }));
+  const handleFeedbackChange = (e) => {
+    const text = e.target.value;
+    if (text.length <= MAX_CHARS) {
+      setFeedback(text);
+      setCharCount(text.length);
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Here you would typically send the data to your backend
-    console.log('Form data submitted:', formData);
     
-    // Show success message
-    setFormSubmitted(true);
+    // Reset states
+    setErrorMessage('');
+    setIsLoading(true);
     
-    // Reset form after 3 seconds
-    setTimeout(() => {
-      setFormSubmitted(false);
-      setFormData({
-        name: '',
-        email: '',
-        subject: '',
-        message: ''
+    try {
+      // Validate feedback
+      if (!feedback.trim()) {
+        setErrorMessage('Please enter your feedback');
+        setIsLoading(false);
+        return;
+      }
+      
+      // Send data to API
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          username: userData.name || 'Anonymous User',
+          feedback: feedback
+        }),
       });
-    }, 3000);
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to submit feedback');
+      }
+      
+      // Show success message
+      setFormSubmitted(true);
+      
+      // Reset form after 3 seconds
+      setTimeout(() => {
+        setFormSubmitted(false);
+        setFeedback('');
+      }, 3000);
+      
+    } catch (error) {
+      setErrorMessage(error.message);
+      console.error('Error submitting feedback:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
     <div className="contact-container">
       <div className="contact-wrapper">
-
-
         {/* Main Content */}
         <div className="contact-content">
           {/* Contact Information */}
@@ -127,68 +165,52 @@ function ContactPage() {
             </div>
           </div>
 
-          {/* Contact Form */}
+          {/* Feedback Form */}
           <div className="contact-form-section">
-            <h2>Send us a message</h2>
             <form className="contact-form" onSubmit={handleSubmit}>
               {formSubmitted ? (
                 <div className="form-success">
                   <CheckCircle size={50} className="success-icon" />
-                  <h3>Message Sent!</h3>
-                  <p>We will get back to you as soon as possible.</p>
+                  <h3>Feedback Submitted!</h3>
+                  <p>Thank you for sharing your thoughts with us.</p>
                 </div>
               ) : (
                 <>
                   <div className="form-group">
-                    <label htmlFor="name" className="form-label">Your Name</label>
-                    <input 
-                      type="text" 
-                      id="name" 
-                      className="form-input" 
-                      placeholder="Enter your name"
-                      value={formData.name}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="email" className="form-label">Email Address</label>
-                    <input 
-                      type="email" 
-                      id="email" 
-                      className="form-input" 
-                      placeholder="Enter your email"
-                      value={formData.email}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="subject" className="form-label">Subject</label>
-                    <input 
-                      type="text" 
-                      id="subject" 
-                      className="form-input" 
-                      placeholder="Enter subject"
-                      value={formData.subject}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="message" className="form-label">Message</label>
+                    <div style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                      <label htmlFor="feedback" className="form-label">Your Feedback</label>
+                    <div className="char-counter">
+                      <span className={charCount > MAX_CHARS * 0.8 ? "char-limit-warning" : ""}>
+                        {charCount}/{MAX_CHARS}
+                      </span>
+                    </div>
+                    </div>
                     <textarea 
-                      id="message" 
+                      id="feedback" 
                       className="form-input" 
-                      placeholder="Enter your message"
-                      value={formData.message}
-                      onChange={handleChange}
+                      placeholder="Please share your thoughts, suggestions, or issues..."
+                      value={feedback}
+                      onChange={handleFeedbackChange}
+                      maxLength={MAX_CHARS}
                       required
                     ></textarea>
                   </div>
-                  <button type="submit" className="submit-btn">
-                    <Send size={18} style={{ marginRight: '8px' }} />
-                    Send Message
+                  {errorMessage && (
+                    <div className="error-message">{errorMessage}</div>
+                  )}
+                  <button 
+                    type="submit" 
+                    className={`submit-btn ${isLoading ? 'loading' : ''}`}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <span className="loading-text">Sending...</span>
+                    ) : (
+                      <>
+                        <Send size={18} style={{ marginRight: '8px' }} />
+                        Submit Feedback
+                      </>
+                    )}
                   </button>
                 </>
               )}

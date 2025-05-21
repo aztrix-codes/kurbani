@@ -56,6 +56,13 @@ CREATE TABLE customers (
     status BOOLEAN NOT NULL DEFAULT FALSE
 )
 
+CREATE TABLE user_feedback (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  username TEXT NOT NULL,
+  feedback TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+);
+
 
 
 
