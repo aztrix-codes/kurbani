@@ -6,6 +6,7 @@ import { Switch } from '@headlessui/react';
 import axios from 'axios';
 import './zonesStyle.css';
 import { useRouter } from 'next/navigation';
+import Shimmer from '@/app/Shimmer';
 
 export default function ZonesPage() {
   const [zones, setZones] = useState([]);
@@ -194,7 +195,7 @@ export default function ZonesPage() {
   };
 
   if (isLoading) {
-    return <div className="zones-page">Loading zones...</div>;
+    return <Shimmer  />;
   }
 
   return (

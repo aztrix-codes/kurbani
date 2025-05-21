@@ -6,6 +6,7 @@ import { Switch } from '@headlessui/react';
 import axios from 'axios';
 import './areasStyle.css';
 import { useRouter } from 'next/navigation';
+import Shimmer from '@/app/Shimmer';
 
 export default function AreasPage() {
   const [zonesList, setZonesList] = useState([]); // Will be populated from API
@@ -218,7 +219,7 @@ export default function AreasPage() {
   };
 
   if (isLoading || isZonesLoading) {
-    return <div className="areas-page">Loading data...</div>;
+    return <Shimmer />;
   }
 
   return (

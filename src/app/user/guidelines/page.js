@@ -1,31 +1,19 @@
 'use client'
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
 import './style.css';
 
 export default function GuidelinesPage() {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userData'));
     if (userData?.userId === 0 && !userData?.isAuthenticated) {
       router.replace('/auth/user');
-    } else {
-      setIsLoading(false);
-    }
+    } 
   }, [router]);
 
-  if (isLoading) {
-    return (
-      <div className="fixed-color-theme flex flex-col p-4 max-w-full min-h-screen">
-        <div className="flex items-center justify-center h-full">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="fixed-color-theme flex flex-col p-4 max-w-full min-h-screen">

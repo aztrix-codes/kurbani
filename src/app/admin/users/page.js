@@ -6,6 +6,7 @@ import { Switch } from '@headlessui/react';
 import axios from 'axios';
 import './usersStyle.css';
 import { useRouter } from 'next/navigation';
+import Shimmer from '@/app/Shimmer';
 
 
 export default function UserManagementPage() {
@@ -162,6 +163,8 @@ export default function UserManagementPage() {
 
       const currentDate = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
+      
+
       if (currentEditId) {
         console.log('Updating user with ID:', currentEditId);
         
@@ -174,6 +177,10 @@ export default function UserManagementPage() {
           area_name: formData.area,
           status: formData.approved
         };
+
+        if (formData.password) {
+          updateData.password = formData.password;
+        }
         
         // Only include image URL if there's a change
         if (imageUrl) {
@@ -263,7 +270,7 @@ export default function UserManagementPage() {
   };
 
   if (isLoading || isAreasLoading) {
-    return <div className="users-page">Loading data...</div>;
+    return <Shimmer />;
   }
 
   return (
@@ -417,16 +424,16 @@ export default function UserManagementPage() {
                 Email*
                 <input name="email" type="email" required value={formData.email} onChange={handleInputChange} />
               </label>
-              {!currentEditId && (
+              {currentEditId && (
                 <label className="password-field">
-                  Password*
+                  Update Password
                   <div className="password-input-container">
                     <input 
                       name="password" 
                       type={showPassword ? "text" : "password"} 
-                      required={!currentEditId}
                       value={formData.password} 
                       onChange={handleInputChange} 
+                      placeholder="Enter new password"
                     />
                     <button 
                       type="button" 

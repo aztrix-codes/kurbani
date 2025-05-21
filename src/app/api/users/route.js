@@ -44,7 +44,7 @@ export async function POST(request) {
 export async function PUT(request) {
   try {
     const data = await request.json();
-    const { user_id, username, phone, email, area_name, created_date, status, img_url } = data;
+    const { user_id, username, phone, email, area_name, created_date, status, img_url, password } = data;
     
     // Check if user_id is provided
     if (!user_id) {
@@ -91,6 +91,12 @@ export async function PUT(request) {
     if (img_url !== undefined) {
       updates.push('img_url = ?');
       params.push(img_url);
+    }
+    
+    // Add password update if provided
+    if (password !== undefined && password !== '') {
+      updates.push('password = ?');
+      params.push(password); // Make sure to hash this password in production
     }
     
     // Add the WHERE clause and user_id parameter
