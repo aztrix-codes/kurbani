@@ -11,13 +11,28 @@ export default function DataTable() {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const [filteredData, setFilteredData] = useState([]);
-  const [editingId, setEditingId] = useState(null);
-  const [editedName, setEditedName] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Modal state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [currentReceipt, setCurrentReceipt] = useState('');
+  const [hissaCards, setHissaCards] = useState([{ id: 1, type: "", text: "", hissaWeight: 0 }]);
+  const [location, setLocation] = useState("Out Of Mumbai");
+  const [receiptNumber, setReceiptNumber] = useState("");
+  const [mobileNumber, setMobileNumber] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [modalError, setModalError] = useState(null);
+  const [modalSuccess, setModalSuccess] = useState(false);
+  const [zones, setZones] = useState(['Out of Mumbai', 'Mumbai']);
 
   const router = useRouter();
   
+  const hissaOptions = [
+    { value: "qurbani", label: "Qurbani" },
+    { value: "aqeeqah_boy", label: "Aqeeqah (Boy - 02 Hissa)", hissaCount: 2 },
+    { value: "aqeeqah_girl", label: "Aqeeqah (Girl - 01 Hissa)", hissaCount: 1 }
+  ];
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userData'));
@@ -32,41 +47,6 @@ export default function DataTable() {
     }
   }, [router]);
 
-     const exportToExcel = () => {
-    try {
-      const dataToExport = filteredData.filter(item => item.status === 1);
-      
-      if (dataToExport.length === 0) {
-        alert("No records with 'Sent' status found to export.");
-        return;
-      }
-      
-      const excelData = dataToExport.map(item => ({
-        'Sr No.': item.id,
-        'Receipt No.': item.recipt,
-        'Name': item.name,
-        'Type': item.type,
-        'Zone': item.zone,
-        'Phone': item.phone || '',
-        'Status': 'Sent' // Show "Sent" for status column
-      }));
-      
-      const worksheet = XLSX.utils.json_to_sheet(excelData);
-      
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
-      
-      XLSX.writeFile(workbook, 'records_export.xlsx');
-      
-      console.log('Excel file exported successfully');
-    } catch (error) {
-      console.error('Error exporting to Excel:', error);
-      alert('Failed to export data to Excel');
-    }
-  };
-
-
-  // Fetch data from API
   const fetchData = async () => {
     try {
       setIsLoading(true);
@@ -88,9 +68,37 @@ export default function DataTable() {
     }
   };
 
-  console.log(data)
+  const exportToExcel = () => {
+    try {
+      const dataToExport = data.filter(item => item.status === 1);
+      
+      if (dataToExport.length === 0) {
+        alert("No records with 'Sent' status found to export.");
+        return;
+      }
+      
+      const excelData = dataToExport.map(item => ({
+        'Sr No.': item.id,
+        'Receipt No.': item.recipt,
+        'Name': item.name,
+        'Type': item.type,
+        'Zone': item.zone,
+        'Phone': item.phone || '',
+        'Status': 'Sent'
+      }));
+      
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Records');
+      XLSX.writeFile(workbook, 'records_export.xlsx');
+      
+      console.log('Excel file exported successfully');
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      alert('Failed to export data to Excel');
+    }
+  };
 
-  // Handle search functionality
   useEffect(() => {
     const results = data.filter(item => 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -101,7 +109,6 @@ export default function DataTable() {
     setFilteredData(results);
   }, [searchTerm, data]);
 
-  // Handle sorting
   const requestSort = (key) => {
     let direction = 'ascending';
     if (sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -121,49 +128,7 @@ export default function DataTable() {
     
     setFilteredData(sortedData);
   };
-  
-  // Handle edit button click
-  const handleEditClick = (id, name) => {
-    setEditingId(id);
-    setEditedName(name);
-  };
-  
-  // Save edited name
-  const saveEditedName = async (id) => {
-    try {
-      const itemToUpdate = data.find(item => item.id === id);
-      if (!itemToUpdate) return;
 
-      await axios.put('/api/customers', {
-        user_id: itemToUpdate.user_id,
-        spl_id: itemToUpdate.spl_id,
-        name: editedName
-      });
-
-      // Update local state
-      const newData = data.map(item => {
-        if (item.id === id) {
-          return { ...item, name: editedName };
-        }
-        return item;
-      });
-      
-      setData(newData);
-      setEditingId(null);
-      setEditedName('');
-    } catch (err) {
-      console.error('Error updating name:', err);
-      alert('Failed to update name');
-    }
-  };
-  
-  // Cancel editing
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditedName('');
-  };
-  
-  // Handle delete functionality
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this record?')) return;
 
@@ -178,15 +143,250 @@ export default function DataTable() {
         }
       });
 
-      // Update local state
-      const newData = data.filter(item => item.id !== id);
-      setData(newData);
+    fetchData();
+
     } catch (err) {
       console.error('Error deleting record:', err);
       alert('Failed to delete record');
     }
   };
 
+  // Modal functions
+  const openEditModal = (receipt) => {
+    setCurrentReceipt(receipt);
+    const recordsWithSameReceipt = data.filter(item => item.recipt === receipt);
+    
+    // Transform records into hissaCards format
+    const cards = [];
+    let idCounter = 1;
+    
+    // Group by name and type to handle aqeeqah_boy duplicates
+    const recordsMap = new Map();
+    recordsWithSameReceipt.forEach(record => {
+      const key = `${record.name}-${record.type}`;
+      if (!recordsMap.has(key)) {
+        recordsMap.set(key, record);
+      }
+    });
+
+    recordsMap.forEach(record => {
+      cards.push({
+        id: idCounter++,
+        type: record.type,
+        text: record.name,
+        hissaWeight: record.type === 'aqeeqah_boy' ? 2 : 1
+      });
+    });
+    
+    setHissaCards(cards.length > 0 ? cards : [{ id: 1, type: "", text: "", hissaWeight: 0 }]);
+    setLocation(recordsWithSameReceipt[0]?.zone || "Out Of Mumbai");
+    setReceiptNumber(receipt);
+    setMobileNumber(recordsWithSameReceipt[0]?.phone || "");
+    setIsEditModalOpen(true);
+  };
+
+  const closeEditModal = () => {
+    setIsEditModalOpen(false);
+    setModalError(null);
+    setModalSuccess(false);
+    setHissaCards([{ id: 1, type: "", text: "", hissaWeight: 0 }]);
+  };
+
+  const calculateTotalHissaWeight = () => {
+    return hissaCards.reduce((total, card) => {
+      return total + (card.type === "aqeeqah_boy" ? 2 : card.type ? 1 : 0);
+    }, 0);
+  };
+
+  const calculateRemainingCardSlots = () => {
+    const totalWeight = calculateTotalHissaWeight();
+    return 7 - totalWeight;
+  };
+
+  const addHissaCard = () => {
+    if (calculateRemainingCardSlots() >= 1) {
+      const newId = hissaCards.length + 1;
+      setHissaCards([...hissaCards, { id: newId, type: "qurbani", text: "", hissaWeight: 1 }]);
+    } else {
+      setModalError("Cannot add more hissas. Maximum of 7 hissas allowed.");
+    }
+  };
+
+  const handleSelectChange = (id, value) => {
+    const updatedCards = [...hissaCards];
+    const cardIndex = updatedCards.findIndex(card => card.id === id);
+    const currentType = updatedCards[cardIndex].type;
+    
+    const currentTotalWeight = calculateTotalHissaWeight();
+    const currentCardWeight = currentType === "aqeeqah_boy" ? 2 : currentType ? 1 : 0;
+    const newCardWeight = value === "aqeeqah_boy" ? 2 : value ? 1 : 0;
+    const weightDifference = newCardWeight - currentCardWeight;
+    
+    if (currentTotalWeight + weightDifference > 7) {
+      setModalError("Cannot add more hissas. Maximum of 7 hissas allowed.");
+      return;
+    }
+    
+    updatedCards[cardIndex] = {
+      ...updatedCards[cardIndex],
+      type: value,
+      hissaWeight: newCardWeight
+    };
+    
+    setHissaCards(updatedCards);
+    setModalError(null);
+  };
+
+  const handleTextChange = (id, text) => {
+    const updatedCards = [...hissaCards];
+    const cardIndex = updatedCards.findIndex(card => card.id === id);
+    updatedCards[cardIndex] = {
+      ...updatedCards[cardIndex],
+      text: text
+    };
+    setHissaCards(updatedCards);
+  };
+
+  const removeHissaCard = (id) => {
+    if (id === 1 || hissaCards.length === 1) return;
+    
+    const filteredCards = hissaCards
+      .filter(card => card.id !== id)
+      .map((card, index) => ({
+        ...card,
+        id: index + 1
+      }));
+    
+    setHissaCards(filteredCards);
+  };
+
+  const generateSplId = (name) => {
+    if (!name) return "";
+    const numericalName = name.toUpperCase().split('').map(char => {
+      const code = char.charCodeAt(0) - 65;
+      return code >= 0 && code <= 25 ? code : '';
+    }).join('');
+    const timestamp = Math.floor(Date.now() / 1000);
+    return `${numericalName}_${timestamp}`;
+  };
+
+ const handleUpdate = async () => {
+  try {
+    setIsSubmitting(true);
+    setModalError(null);
+    setModalSuccess(false);
+
+    // Validate inputs
+    if (hissaCards.length === 0) {
+      throw new Error('At least one hissa card is required');
+    }
+
+    if (!receiptNumber) {
+      throw new Error('Receipt number is required');
+    }
+
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    if (!userData?.userId) {
+      throw new Error('User not authenticated');
+    }
+
+    // 1. First delete all existing records with this receipt number
+    const deleteResponse = await axios.delete('/api/customers?bulk=true', {
+      data: {
+        user_id: userData.userId,
+        receipt: currentReceipt
+      }
+    });
+
+    console.log('Delete response:', deleteResponse.data);
+
+    // 2. Create new records with the updated data
+    const validCards = hissaCards.filter(card => card.type && card.text.trim());
+    
+    if (validCards.length === 0) {
+      throw new Error('At least one valid hissa with type and name is required');
+    }
+
+    const requests = [];
+    const createdRecords = [];
+
+    for (const card of validCards) {
+      const spl_id = generateSplId(card.text);
+      
+      if (card.type === "aqeeqah_boy") {
+        // Create two identical records for aqeeqah_boy (counts as 2 hissas)
+        for (let i = 0; i < 2; i++) {
+          requests.push(
+            axios.post('/api/customers', {
+              user_id: userData.userId,
+              recipt: receiptNumber,
+              spl_id: spl_id,
+              name: card.text,
+              type: card.type,
+              zone: location,
+              phone: mobileNumber || null,
+              status: false // Assuming default status is false/unsent
+            })
+          );
+          createdRecords.push({
+            type: card.type,
+            name: card.text,
+            spl_id
+          });
+        }
+      } else {
+        // Single record for other types
+        requests.push(
+          axios.post('/api/customers', {
+            user_id: userData.userId,
+            recipt: receiptNumber,
+            spl_id: spl_id,
+            name: card.text,
+            type: card.type,
+            zone: location,
+            phone: mobileNumber || null,
+            status: false
+          })
+        );
+        createdRecords.push({
+          type: card.type,
+          name: card.text,
+          spl_id
+        });
+      }
+    }
+
+    // Execute all requests
+    const responses = await Promise.all(requests);
+    console.log('Created records:', responses.map(r => r.data));
+
+    // 3. Refresh the data and show success
+    setModalSuccess(true);
+    fetchData(); // Refresh the main table data
+    
+    // Close modal after 1.5 seconds
+    setTimeout(() => {
+      closeEditModal();
+    }, 1500);
+
+  } catch (err) {
+    console.error('Update error:', err);
+    const errorMessage = err.response?.data?.error || 
+                        err.message || 
+                        'Failed to update records';
+    setModalError(errorMessage);
+    
+    // If the error occurred after delete but before create,
+    // we should refetch data to ensure consistency
+    fetchData();
+    
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
+  const totalUsedHissas = calculateTotalHissaWeight();
+  const remainingHissas = 7 - totalUsedHissas;
 
   if (isLoading) {
     return (
@@ -208,6 +408,172 @@ export default function DataTable() {
 
   return (
     <div className="fixed-color-theme flex flex-col p-4 max-w-full min-h-screen">
+      {/* Edit Modal */}
+      {isEditModalOpen && (
+  <div className="edit-modal-overlay">
+    <div className="edit-modal-container">
+      <div className="edit-modal-content">
+        {/* Modal Header - Now outside the content-inner for sticky behavior */}
+        <div className="edit-modal-header">
+          <h2 className="edit-modal-title">
+            Edit Shares for Receipt: <span className="edit-modal-title-receipt">{currentReceipt}</span>
+          </h2>
+          <button 
+            onClick={closeEditModal}
+            className="edit-modal-close-btn"
+            aria-label="Close modal"
+          >
+            <X size={24} />
+          </button>
+        </div>
+        
+        {/* New content-inner wrapper for proper padding and structure */}
+        <div className="edit-modal-content-inner">
+          {/* Input Section */}
+          <div className="edit-modal-input-grid">
+            <select 
+              className="edit-modal-select custom-dropdown"
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+            >
+              {zones.map((zone, index) => (
+                <option key={index} value={zone}>
+                  {zone}
+                </option>
+              ))}
+            </select>
+            
+            <input 
+              type="text" 
+              placeholder="Enter Receipt Number *" 
+              className="edit-modal-input"
+              value={receiptNumber}
+              onChange={(e) => setReceiptNumber(e.target.value)}
+              required
+            />
+            
+            <input 
+              type="text" 
+              placeholder="Enter Mobile Number (Optional)" 
+              className="edit-modal-input"
+              value={mobileNumber}
+              onChange={(e) => setMobileNumber(e.target.value)}
+            />
+          </div>
+          
+          {/* Hissa Counter */}
+          <div className="edit-modal-counter">
+            <span className="edit-modal-counter-text">Hissa Usage</span>
+            <span className="edit-modal-counter-value">{totalUsedHissas}/7 Hissas</span>
+          </div>
+
+          {/* Cards Container */}
+          <div className="edit-modal-cards">
+            {hissaCards.map((card) => {
+              const isAqeeqahBoy = card.type === 'aqeeqah_boy';
+              const availableSlotsExcludingThisCard = 7 - (totalUsedHissas - (isAqeeqahBoy ? 2 : card.type ? 1 : 0));
+              
+              return (
+                <div key={card.id} className={`edit-modal-card ${isAqeeqahBoy ? 'edit-modal-card-special' : ''}`}>
+                  <div className="edit-modal-card-header">
+                    <h3 className="edit-modal-card-title">
+                      Hissa {card.id} {isAqeeqahBoy && <span className="edit-modal-card-counts">(Counts as 2)</span>}
+                    </h3>
+                    {card.id !== 1 && (
+                      <button 
+                        className="edit-modal-card-remove"
+                        onClick={() => removeHissaCard(card.id)}
+                        aria-label="Remove Hissa"
+                      >
+                        ×
+                      </button>
+                    )}
+                  </div>
+                  
+                  <select 
+                    value={card.type}
+                    onChange={(e) => handleSelectChange(card.id, e.target.value)}
+                    className="edit-modal-card-select custom-dropdown"
+                    required
+                  >
+                    {hissaOptions.map((option, index) => {
+                      const isDisabled = option.value === "aqeeqah_boy" && 
+                        availableSlotsExcludingThisCard < 2;
+                      
+                      return (
+                        <option 
+                          key={index} 
+                          value={option.value}
+                          disabled={isDisabled}
+                        >
+                          {option.label}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  
+                  <input 
+                    type="text" 
+                    value={card.text}
+                    onChange={(e) => handleTextChange(card.id, e.target.value)}
+                    placeholder="Enter name * (Maximum 250 characters)" 
+                    className="edit-modal-card-input"
+                    maxLength={250}
+                    required
+                  />
+                </div>
+              );
+            })}
+          </div>
+          
+          {/* Error and Success Messages */}
+          {modalError && (
+            <div className="edit-modal-error">
+              {modalError}
+            </div>
+          )}
+          {modalSuccess && (
+            <div className="edit-modal-success">
+              Data updated successfully!
+            </div>
+          )}
+        </div>
+        
+        {/* Action Buttons - Also outside content-inner for sticky behavior */}
+        <div className="edit-modal-actions">
+          <button 
+            className="edit-modal-cancel"
+            onClick={closeEditModal}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          {remainingHissas >= 1 && (
+            <button 
+              onClick={addHissaCard} 
+              className="edit-modal-add-btn"
+            >
+              <span>Add Hissa</span>
+            </button>
+          )}
+          <button 
+            className="edit-modal-save"
+            onClick={handleUpdate}
+            disabled={isSubmitting || hissaCards.length === 0}
+          >
+            {isSubmitting ? (
+              <>
+                <span className="edit-modal-spinner"></span>
+                <span>Updating...</span>
+              </>
+            ) : 'Update'}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
         <h1 className="text-2xl font-bold">Records Management</h1>
         
@@ -225,7 +591,7 @@ export default function DataTable() {
           
           <button 
             onClick={exportToExcel}
-            className="export-button flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg"
+            className="export-button flex items-center justify-center gap-2 text-white px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700"
           >
             <FileSpreadsheet size={18} />
             <span>Export Excel</span>
@@ -233,8 +599,8 @@ export default function DataTable() {
         </div>
       </div>
       
-      <div className="main-table-container rounded-lg shadow overflow-hidden">
-        <div className="table-header p-4 border-b flex justify-between items-center">
+      <div className="main-table-container rounded-lg shadow overflow-hidden bg-white">
+        <div className="table-header p-4 border-b flex justify-between items-center bg-gray-50">
           <div className="font-medium">
             {filteredData.length} Record{filteredData.length !== 1 ? 's' : ''}
           </div>
@@ -243,38 +609,38 @@ export default function DataTable() {
         <div className="overflow-x-auto">
           <div className="table-container">
             <div className="table-scroll-wrapper">
-              <div className="table-heads">
-                <div className="table-cell cursor-pointer" onClick={() => requestSort('id')}>
+              <div className="table-heads grid grid-cols-7 bg-gray-100">
+                <div className="table-cell cursor-pointer p-3 font-medium" onClick={() => requestSort('id')}>
                   <span className="flex items-center justify-center gap-1">
                     Sr no. <ArrowUpDown size={14} />
                   </span>
                 </div>
-                <div className="table-cell cursor-pointer" onClick={() => requestSort('receipt')}>
+                <div className="table-cell cursor-pointer p-3 font-medium" onClick={() => requestSort('recipt')}>
                   <span className="flex items-center justify-center gap-1">
                     Receipt no. <ArrowUpDown size={14} />
                   </span>
                 </div>
-                <div className="table-cell cursor-pointer" onClick={() => requestSort('name')}>
+                <div className="table-cell cursor-pointer p-3 font-medium" onClick={() => requestSort('name')}>
                   <span className="flex items-center justify-center gap-1">
                     Name <ArrowUpDown size={14} />
                   </span>
                 </div>
-                <div className="table-cell cursor-pointer" onClick={() => requestSort('type')}>
+                <div className="table-cell cursor-pointer p-3 font-medium" onClick={() => requestSort('type')}>
                   <span className="flex items-center justify-center gap-1">
                     Type <ArrowUpDown size={14} />
                   </span>
                 </div>
-                <div className="table-cell cursor-pointer" onClick={() => requestSort('zone')}>
+                <div className="table-cell cursor-pointer p-3 font-medium" onClick={() => requestSort('zone')}>
                   <span className="flex items-center justify-center gap-1">
                     Zone <ArrowUpDown size={14} />
                   </span>
                 </div>
-                <div className="table-cell cursor-pointer">
+                <div className="table-cell p-3 font-medium">
                   <span className="flex items-center justify-center">
                     Phone
                   </span>
                 </div>
-                <div className="table-cell">
+                <div className="table-cell p-3 font-medium">
                   <span className="flex items-center justify-center">
                     Actions
                   </span>
@@ -284,74 +650,41 @@ export default function DataTable() {
               <div className="table-body">
                 {filteredData.length > 0 ? (
                   filteredData.map((item) => (
-                    <div className="table-body-item" key={item.id}>
-                      <div className="table-cell">{item.id}</div>
-                      <div className="table-cell">{item.recipt}</div>
-                      <div className="table-cell">
-                        {editingId === item.id ? (
-                          <div className="name-edit-container">
-                            <input
-                              type="text"
-                              value={editedName}
-                              onChange={(e) => setEditedName(e.target.value)}
-                              className="name-edit-input"
-                              autoFocus
-                            />
+                    <div className="table-body-item grid grid-cols-7 border-b hover:bg-gray-50" key={item.id}>
+                      <div className="table-cell p-3 text-center">{item.id}</div>
+                      <div className="table-cell p-3 text-center">{item.recipt}</div>
+                      <div className="table-cell p-3 text-center">{item.name}</div>
+                      <div className="table-cell p-3 text-center">{item.type}</div>
+                      <div className="table-cell p-3 text-center">{item.zone}</div>
+                      <div className="table-cell p-3 text-center">{item?.phone || '-'}</div>
+                      <div className="table-cell p-3 text-center">
+                        {item.status ? (
+                          <div className="sent-status inline-block bg-green-100 text-green-800 px-2 py-1 rounded text-sm">
+                            Sent
                           </div>
                         ) : (
-                          item.name
-                        )}
-                      </div>
-                      <div className="table-cell">{item.type}</div>
-                      <div className="table-cell">{item.zone}</div>
-                      <div className="table-cell">{item?.phone}</div>
-                      <div className="table-cell actions-cell">
-                        {item.status ? (
-                          <div className="sent-status">Sent</div>
-                        ) : (
-                          <div className="action-buttons">
-                            {editingId === item.id ? (
-                              <div className="edit-actions">
-                                <button 
-                                  onClick={() => saveEditedName(item.id)}
-                                  className="edit-action-button save-button"
-                                  title="Save"
-                                >
-                                  <Check size={16} />
-                                </button>
-                                <button 
-                                  onClick={cancelEdit}
-                                  className="edit-action-button cancel-button"
-                                  title="Cancel"
-                                >
-                                  <X size={16} />
-                                </button>
-                              </div>
-                            ) : (
-                              <>
-                                <button 
-                                  className="action-button edit-button"
-                                  onClick={() => handleEditClick(item.id, item.name)}
-                                  title="Edit"
-                                >
-                                  <Edit size={16} />
-                                </button>
-                                <button 
-                                  className="action-button delete-button"
-                                  onClick={() => handleDelete(item.id)}
-                                  title="Delete"
-                                >
-                                  <Trash2 size={16} />
-                                </button>
-                              </>
-                            )}
+                          <div className="action-buttons flex justify-center space-x-2">
+                            <button 
+                              className="action-button edit-button p-1 text-blue-500 hover:text-blue-700"
+                              onClick={() => openEditModal(item.recipt)}
+                              title="Edit"
+                            >
+                              <Edit size={16} />
+                            </button>
+                            <button 
+                              className="action-button delete-button p-1 text-red-500 hover:text-red-700"
+                              onClick={() => handleDelete(item.id)}
+                              title="Delete"
+                            >
+                              <Trash2 size={16} />
+                            </button>
                           </div>
                         )}
                       </div>
                     </div>
                   ))
                 ) : (
-                  <div className="p-8 text-center text-gray-500">
+                  <div className="p-8 text-center text-gray-500 col-span-7">
                     No records found matching your search.
                   </div>
                 )}

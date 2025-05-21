@@ -239,7 +239,7 @@ export default function QurbaniApp() {
         
         <div className="input-section">
           <select 
-            className="form-input location-input"
+            className="form-input location-input custom-dropdown"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             disabled={isLoading}
@@ -305,7 +305,7 @@ export default function QurbaniApp() {
                 <select 
                   value={card.type}
                   onChange={(e) => handleSelectChange(card.id, e.target.value)}
-                  className="form-input"
+                  className="form-input custom-dropdown"
                   required
                 >
                   {hissaOptions.map((option, index) => {

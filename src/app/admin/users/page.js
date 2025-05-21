@@ -445,7 +445,7 @@ export default function UserManagementPage() {
                   required 
                   value={formData.area} 
                   onChange={handleInputChange}
-                  className="area-select"
+                  className="area-select custom-dropdown"
                 >
                   <option value="" disabled>Select Area</option>
                   {areasList.map((area, index) => (

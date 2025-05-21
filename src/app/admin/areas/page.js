@@ -339,7 +339,7 @@ export default function AreasPage() {
                   required 
                   value={formData.zone} 
                   onChange={handleInputChange}
-                  className="zone-select"
+                  className="zone-select custom-dropdown"
                 >
                   <option value="" disabled>Select Zone</option>
                   {zonesList.map((zone, index) => (

@@ -123,7 +123,44 @@ export async function PATCH(request) {
   }
 }
 
+
+export async function DELETE_BULK(request) {
+  try {
+    const { user_id, receipt } = await request.json();
+    
+    if (!user_id || !receipt) {
+      return new Response(JSON.stringify({ error: 'user_id and receipt are required' }), {
+        status: 400
+      });
+    }
+
+    const [result] = await pool.query(
+      'DELETE FROM customers WHERE user_id = ? AND recipt = ?',
+      [user_id, receipt]
+    );
+
+    return new Response(JSON.stringify({ 
+      message: `${result.affectedRows} records deleted successfully`
+    }), {
+      status: 200
+    });
+  } catch (error) {
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500
+    });
+  }
+}
+
+
 export async function DELETE(request) {
+  const { searchParams } = new URL(request.url);
+  const bulk = searchParams.get('bulk');
+  
+  if (bulk === 'true') {
+    return DELETE_BULK(request);
+  }
+  
+  // Original single deletion logic
   try {
     const { user_id, spl_id } = await request.json();
     
