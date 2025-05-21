@@ -5,6 +5,7 @@ import { Briefcase, PlusCircle, CreditCard, Clock, FileText, Users, MessageCircl
 import "./userPage.css";
 import { useRouter } from "next/navigation";
 import axios from "axios"; 
+import DashboardShimmer from "./DashboardShimmer";
 
 function Page() {
   const [data, setData] = useState([]);
@@ -50,8 +51,8 @@ function Page() {
   ];
 
   if (loading) {
-    return <div className="page-container">Loading...</div>;
-  }
+  return <DashboardShimmer />;
+}
 
   return (
     <div className="page-container">      
