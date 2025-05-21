@@ -199,7 +199,7 @@ export default function ZonesPage() {
   }
 
   return (
-    <div className="zones-page">
+    <div className="zones-page" key={router.asPath}>
       <div className="page-header">
         <h1>Manage Zone</h1>
         <button onClick={() => setIsModalOpen(true)} className="add-button">

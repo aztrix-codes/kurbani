@@ -274,7 +274,7 @@ export default function UserManagementPage() {
   }
 
   return (
-    <div className="users-page">
+    <div className="users-page" key={router.asPath}>
       <div className="page-header">
         <h1>Manage Users</h1>
         <button onClick={() => setIsModalOpen(true)} className="add-button">

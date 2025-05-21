@@ -17,10 +17,13 @@
 .app-container {
   display: flex;
   grid-template-rows: auto 1fr auto;
-  max-height: 100vh;
+  min-height: 100%;
   background-color: var(--bg-color);
   width: 100vw;
   padding: 1rem;
+  position: absolute;
+  bottom: 0;
+  top: 3rem;
 }
 
 /* Main Content */

@@ -1,7 +1,7 @@
 'use client'
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle2, XCircle, ArrowLeft } from 'lucide-react';
+import { CheckCircle2, XCircle } from 'lucide-react';
 import './style.css';
 
 export default function GuidelinesPage() {
@@ -55,6 +55,10 @@ export default function GuidelinesPage() {
               <li className="flex items-start">
                 <CheckCircle2 className="mt-1 mr-3 text-green-500 flex-shrink-0" size={18} />
                 <span className="text-gray-700">Use the edit feature to correct mistakes</span>
+              </li>
+              <li className="flex items-start">
+                <CheckCircle2 className="mt-1 mr-3 text-green-500 flex-shrink-0" size={18} />
+                <span className="text-gray-700">Try refreshing the page if the interface not loading properly</span>
               </li>
             </ul>
           </div>

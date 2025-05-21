@@ -10,7 +10,6 @@ import Shimmer from '@/app/Shimmer';
 export default function DataTable() {
   const [data, setData] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'ascending' });
   const [filteredData, setFilteredData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -109,26 +108,6 @@ export default function DataTable() {
     );
     setFilteredData(results);
   }, [searchTerm, data]);
-
-  const requestSort = (key) => {
-    let direction = 'ascending';
-    if (sortConfig.key === key && sortConfig.direction === 'ascending') {
-      direction = 'descending';
-    }
-    setSortConfig({ key, direction });
-    
-    const sortedData = [...filteredData].sort((a, b) => {
-      if (a[key] < b[key]) {
-        return direction === 'ascending' ? -1 : 1;
-      }
-      if (a[key] > b[key]) {
-        return direction === 'ascending' ? 1 : -1;
-      }
-      return 0;
-    });
-    
-    setFilteredData(sortedData);
-  };
 
   const handleDelete = async (id) => {
     if (!confirm('Are you sure you want to delete this record?')) return;
@@ -607,29 +586,29 @@ export default function DataTable() {
           <div className="table-container">
             <div className="table-scroll-wrapper">
               <div className="table-heads grid grid-cols-7 bg-gray-100">
-                <div className="table-cell cursor-pointer p-3 font-medium" onClick={() => requestSort('id')}>
+                <div className="table-cell cursor-pointer p-3 font-medium" >
                   <span className="flex items-center justify-center gap-1">
-                    Sr no. <ArrowUpDown size={14} />
+                    Sr no.
                   </span>
                 </div>
-                <div className="table-cell cursor-pointer p-3 font-medium" onClick={() => requestSort('recipt')}>
+                <div className="table-cell cursor-pointer p-3 font-medium" >
                   <span className="flex items-center justify-center gap-1">
-                    Receipt no. <ArrowUpDown size={14} />
+                    Receipt no.
                   </span>
                 </div>
-                <div className="table-cell cursor-pointer p-3 font-medium" onClick={() => requestSort('name')}>
+                <div className="table-cell cursor-pointer p-3 font-medium" >
                   <span className="flex items-center justify-center gap-1">
-                    Name <ArrowUpDown size={14} />
+                    Name
                   </span>
                 </div>
-                <div className="table-cell cursor-pointer p-3 font-medium" onClick={() => requestSort('type')}>
+                <div className="table-cell cursor-pointer p-3 font-medium" >
                   <span className="flex items-center justify-center gap-1">
-                    Type <ArrowUpDown size={14} />
+                    Type
                   </span>
                 </div>
-                <div className="table-cell cursor-pointer p-3 font-medium" onClick={() => requestSort('zone')}>
+                <div className="table-cell cursor-pointer p-3 font-medium" >
                   <span className="flex items-center justify-center gap-1">
-                    Zone <ArrowUpDown size={14} />
+                    Zone
                   </span>
                 </div>
                 <div className="table-cell p-3 font-medium">
@@ -646,9 +625,9 @@ export default function DataTable() {
               
               <div className="table-body">
                 {filteredData.length > 0 ? (
-                  filteredData.map((item) => (
-                    <div className="table-body-item grid grid-cols-7 border-b hover:bg-gray-50" key={item.id}>
-                      <div className="table-cell p-3 text-center">{item.id}</div>
+                  filteredData.map((item, index) => (
+                    <div className="table-body-item grid grid-cols-7 border-b hover:bg-gray-50" key={index}>
+                      <div className="table-cell p-3 text-center">{index + 1}</div>
                       <div className="table-cell p-3 text-center">{item.recipt}</div>
                       <div className="table-cell p-3 text-center">{item.name}</div>
                       <div className="table-cell p-3 text-center">{item.type}</div>

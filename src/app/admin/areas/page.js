@@ -223,7 +223,7 @@ export default function AreasPage() {
   }
 
   return (
-    <div className="areas-page">
+    <div className="areas-page" key={router.asPath}>
       <div className="page-header">
         <h1>Manage Area</h1>
         <button onClick={() => setIsModalOpen(true)} className="add-button">

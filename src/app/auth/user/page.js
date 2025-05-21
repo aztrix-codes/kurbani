@@ -100,7 +100,7 @@ function UserLoginPage() {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: isMobile ? 'transparent' : '#f5f5f5',
+      backgroundColor: isMobile ? 'transparent' : '#f8fafc',
       position: 'relative'
     },
     formContainer: {

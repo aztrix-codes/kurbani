@@ -16,12 +16,13 @@ outline: none;
 }
 
 .export-button {
-background-color: #4caf50;
+background-color: #046307;
 transition: background-color 0.2s;
 }
 
 .export-button:hover {
 background-color: #388e3c;
+cursor: pointer;
 }
 
 .main-table-container {

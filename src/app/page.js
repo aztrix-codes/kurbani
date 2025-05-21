@@ -41,7 +41,7 @@ export default function Home() {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#f5f5f5'
+      backgroundColor: '#f8fafc'
     },
     backgroundCircle1: {
       position: 'absolute',
@@ -170,7 +170,6 @@ export default function Home() {
 
   return (
     <div style={styles.mainContainer}>
-      {/* Right Panel - Login Selection */}
       <div style={styles.rightPanel}>
         <div style={styles.backgroundCircle3}></div>
         <div style={styles.backgroundCircle4}></div>

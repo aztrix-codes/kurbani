@@ -1,8 +1,8 @@
 
 :root {
-  --primary-color: #1a5d1e;
+  --primary-color: #046307;
   --primary-light: #6ab04c;
-  --primary-dark: #0f3d13;
+  --primary-dark: #046307;
   --accent-color: #f3b941;
   --dark-bg: #1c2331;
   --light-bg: #f9f9f9;
@@ -170,28 +170,20 @@
   width: 100%;
   padding: 14px 18px;
   background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   color: var(--light-text);
   font-family: inherit;
   font-size: 1rem;
   transition: var(--transition);
-}
-
-.form-input:focus {
   outline: none;
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.5);
-}
-
-.form-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
 }
 
 textarea.form-input {
   min-height: 180px;
   max-height: 55vh;
   resize: vertical;
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .submit-btn {

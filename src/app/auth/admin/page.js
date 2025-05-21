@@ -79,7 +79,7 @@ function AdminLoginPage() {
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#f5f5f5'
+      backgroundColor: '#f8fafc'
     },
     leftPanelContent: {
       color: 'white',

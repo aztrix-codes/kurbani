@@ -86,3 +86,10 @@ VALUES
 ('sam_smith', '9345678901', 'sam@example.com', 'hashed_password_3', 'South Area 1', 'https://example.com/img/sam.jpg'),
 ('lisa_brown', '9456789012', 'lisa@example.com', 'hashed_password_4', 'East Area 1', 'https://example.com/img/lisa.jpg');
 
+
+
+
+
+
+the green : #046307
+bg white:  #f8fafc
