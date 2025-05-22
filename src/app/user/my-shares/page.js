@@ -17,7 +17,7 @@ export default function DataTable() {
   // Modal state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentReceipt, setCurrentReceipt] = useState('');
-  const [hissaCards, setHissaCards] = useState([{ id: 1, type: "", text: "", hissaWeight: 0 }]);
+  const [hissaCards, setHissaCards] = useState([{ id: 1, type: "", text: "", isDisabled: false, pairId: null }]);
   const [location, setLocation] = useState("Out Of Mumbai");
   const [receiptNumber, setReceiptNumber] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
@@ -29,9 +29,10 @@ export default function DataTable() {
   const router = useRouter();
   
   const hissaOptions = [
+    { value: "", label: "SELECT" },
     { value: "qurbani", label: "Qurbani" },
-    { value: "aqeeqah_boy", label: "Aqeeqah (Boy - 02 Hissa)", hissaCount: 2 },
-    { value: "aqeeqah_girl", label: "Aqeeqah (Girl - 01 Hissa)", hissaCount: 1 }
+    { value: "aqeeqah_boy", label: "Aqeeqah (Boy)" },
+    { value: "aqeeqah_girl", label: "Aqeeqah (Girl)" }
   ];
 
   useEffect(() => {
@@ -123,7 +124,7 @@ export default function DataTable() {
         }
       });
 
-    fetchData();
+      fetchData();
 
     } catch (err) {
       console.error('Error deleting record:', err);
@@ -150,15 +151,35 @@ export default function DataTable() {
     });
 
     recordsMap.forEach(record => {
-      cards.push({
-        id: idCounter++,
-        type: record.type,
-        text: record.name,
-        hissaWeight: record.type === 'aqeeqah_boy' ? 2 : 1
-      });
+      if (record.type === 'aqeeqah_boy') {
+        // Add primary card
+        cards.push({
+          id: idCounter++,
+          type: record.type,
+          text: record.name,
+          isDisabled: false,
+          pairId: null
+        });
+        // Add paired disabled card
+        cards.push({
+          id: idCounter++,
+          type: record.type,
+          text: record.name,
+          isDisabled: true,
+          pairId: cards[cards.length - 1].id
+        });
+      } else {
+        cards.push({
+          id: idCounter++,
+          type: record.type,
+          text: record.name,
+          isDisabled: false,
+          pairId: null
+        });
+      }
     });
     
-    setHissaCards(cards.length > 0 ? cards : [{ id: 1, type: "", text: "", hissaWeight: 0 }]);
+    setHissaCards(cards.length > 0 ? cards : [{ id: 1, type: "", text: "", isDisabled: false, pairId: null }]);
     setLocation(recordsWithSameReceipt[0]?.zone || "Out Of Mumbai");
     setReceiptNumber(receipt);
     setMobileNumber(recordsWithSameReceipt[0]?.phone || "");
@@ -169,11 +190,12 @@ export default function DataTable() {
     setIsEditModalOpen(false);
     setModalError(null);
     setModalSuccess(false);
-    setHissaCards([{ id: 1, type: "", text: "", hissaWeight: 0 }]);
+    setHissaCards([{ id: 1, type: "", text: "", isDisabled: false, pairId: null }]);
   };
 
   const calculateTotalHissaWeight = () => {
     return hissaCards.reduce((total, card) => {
+      if (card.pairId !== null) return total; // Skip paired cards to avoid double counting
       return total + (card.type === "aqeeqah_boy" ? 2 : card.type ? 1 : 0);
     }, 0);
   };
@@ -185,59 +207,91 @@ export default function DataTable() {
 
   const addHissaCard = () => {
     if (calculateRemainingCardSlots() >= 1) {
-      const newId = hissaCards.length + 1;
-      setHissaCards([...hissaCards, { id: newId, type: "qurbani", text: "", hissaWeight: 1 }]);
+      const newId = hissaCards.length > 0 ? Math.max(...hissaCards.map(c => c.id)) + 1 : 1;
+      setHissaCards([...hissaCards, { id: newId, type: "qurbani", text: "", isDisabled: false, pairId: null }]);
     } else {
       setModalError("Cannot add more hissas. Maximum of 7 hissas allowed.");
     }
   };
 
   const handleSelectChange = (id, value) => {
-    const updatedCards = [...hissaCards];
-    const cardIndex = updatedCards.findIndex(card => card.id === id);
-    const currentType = updatedCards[cardIndex].type;
-    
-    const currentTotalWeight = calculateTotalHissaWeight();
-    const currentCardWeight = currentType === "aqeeqah_boy" ? 2 : currentType ? 1 : 0;
-    const newCardWeight = value === "aqeeqah_boy" ? 2 : value ? 1 : 0;
-    const weightDifference = newCardWeight - currentCardWeight;
-    
-    if (currentTotalWeight + weightDifference > 7) {
-      setModalError("Cannot add more hissas. Maximum of 7 hissas allowed.");
-      return;
-    }
-    
-    updatedCards[cardIndex] = {
-      ...updatedCards[cardIndex],
-      type: value,
-      hissaWeight: newCardWeight
-    };
-    
-    setHissaCards(updatedCards);
-    setModalError(null);
+    setHissaCards(prevCards => {
+      // Remove any existing pair for this card
+      const cardsWithoutPair = prevCards.filter(card => card.pairId !== id);
+      
+      // Find the card being changed
+      const cardIndex = cardsWithoutPair.findIndex(card => card.id === id);
+      if (cardIndex === -1) return prevCards;
+      
+      const updatedCards = [...cardsWithoutPair];
+      const currentCard = updatedCards[cardIndex];
+      
+      // Calculate if we have space for the change
+      const currentWeight = currentCard.type === "aqeeqah_boy" ? 2 : currentCard.type ? 1 : 0;
+      const newWeight = value === "aqeeqah_boy" ? 2 : value ? 1 : 0;
+      const totalWeight = calculateTotalHissaWeight();
+      
+      if (totalWeight - currentWeight + newWeight > 7) {
+        setModalError("Cannot add more hissas. Maximum of 7 hissas allowed.");
+        return prevCards;
+      }
+      
+      // Update the main card
+      updatedCards[cardIndex] = {
+        ...currentCard,
+        type: value,
+        text: value === "aqeeqah_boy" ? currentCard.text : currentCard.text
+      };
+      
+      // If changing to aqeeqah_boy, add a paired disabled card
+      if (value === "aqeeqah_boy") {
+        const pairId = id;
+        const newPairCard = {
+          id: Math.max(...updatedCards.map(c => c.id), 0) + 1,
+          type: value,
+          text: currentCard.text,
+          isDisabled: true,
+          pairId: pairId
+        };
+        updatedCards.push(newPairCard);
+      }
+      
+      setModalError(null);
+      return updatedCards;
+    });
   };
 
   const handleTextChange = (id, text) => {
-    const updatedCards = [...hissaCards];
-    const cardIndex = updatedCards.findIndex(card => card.id === id);
-    updatedCards[cardIndex] = {
-      ...updatedCards[cardIndex],
-      text: text
-    };
-    setHissaCards(updatedCards);
+    setHissaCards(prevCards => {
+      return prevCards.map(card => {
+        // Update both the main card and its paired card
+        if (card.id === id || card.pairId === id) {
+          return { ...card, text: text };
+        }
+        return card;
+      });
+    });
   };
 
   const removeHissaCard = (id) => {
     if (id === 1 || hissaCards.length === 1) return;
     
-    const filteredCards = hissaCards
-      .filter(card => card.id !== id)
-      .map((card, index) => ({
+    setHissaCards(prevCards => {
+      // Find the card to remove
+      const cardToRemove = prevCards.find(card => card.id === id);
+      
+      // Remove both the card and its pair if exists
+      const cardsToKeep = prevCards.filter(card => 
+        card.id !== id && card.pairId !== id
+      );
+      
+      // Reindex the remaining cards
+      return cardsToKeep.map((card, index) => ({
         ...card,
-        id: index + 1
+        id: index + 1,
+        pairId: card.pairId ? index : null // Update pairId reference if needed
       }));
-    
-    setHissaCards(filteredCards);
+    });
   };
 
   const generateSplId = (name) => {
@@ -250,52 +304,74 @@ export default function DataTable() {
     return `${numericalName}_${timestamp}`;
   };
 
- const handleUpdate = async () => {
-  try {
-    setIsSubmitting(true);
-    setModalError(null);
-    setModalSuccess(false);
+  const handleUpdate = async () => {
+    try {
+      setIsSubmitting(true);
+      setModalError(null);
+      setModalSuccess(false);
 
-    // Validate inputs
-    if (hissaCards.length === 0) {
-      throw new Error('At least one hissa card is required');
-    }
-
-    if (!receiptNumber) {
-      throw new Error('Receipt number is required');
-    }
-
-    const userData = JSON.parse(localStorage.getItem('userData'));
-    if (!userData?.userId) {
-      throw new Error('User not authenticated');
-    }
-
-    // 1. First delete all existing records with this receipt number
-    const deleteResponse = await axios.delete('/api/customers?bulk=true', {
-      data: {
-        user_id: userData.userId,
-        receipt: currentReceipt
+      // Validate inputs
+      if (hissaCards.length === 0) {
+        throw new Error('At least one hissa card is required');
       }
-    });
 
-    console.log('Delete response:', deleteResponse.data);
+      if (!receiptNumber) {
+        throw new Error('Receipt number is required');
+      }
 
-    // 2. Create new records with the updated data
-    const validCards = hissaCards.filter(card => card.type && card.text.trim());
-    
-    if (validCards.length === 0) {
-      throw new Error('At least one valid hissa with type and name is required');
-    }
+      const userData = JSON.parse(localStorage.getItem('userData'));
+      if (!userData?.userId) {
+        throw new Error('User not authenticated');
+      }
 
-    const requests = [];
-    const createdRecords = [];
+      // 1. First delete all existing records with this receipt number
+      const deleteResponse = await axios.delete('/api/customers?bulk=true', {
+        data: {
+          user_id: userData.userId,
+          receipt: currentReceipt
+        }
+      });
 
-    for (const card of validCards) {
-      const spl_id = generateSplId(card.text);
+      console.log('Delete response:', deleteResponse.data);
+
+      // 2. Create new records with the updated data
+      const validCards = hissaCards.filter(card => 
+        card.type && card.text.trim() && !card.isDisabled
+      );
       
-      if (card.type === "aqeeqah_boy") {
-        // Create two identical records for aqeeqah_boy (counts as 2 hissas)
-        for (let i = 0; i < 2; i++) {
+      if (validCards.length === 0) {
+        throw new Error('At least one valid hissa with type and name is required');
+      }
+
+      const requests = [];
+      const createdRecords = [];
+
+      for (const card of validCards) {
+        const spl_id = generateSplId(card.text);
+        
+        if (card.type === "aqeeqah_boy") {
+          // Create two identical records for aqeeqah_boy (counts as 2 hissas)
+          for (let i = 0; i < 2; i++) {
+            requests.push(
+              axios.post('/api/customers', {
+                user_id: userData.userId,
+                recipt: receiptNumber,
+                spl_id: spl_id,
+                name: card.text,
+                type: card.type,
+                zone: location,
+                phone: mobileNumber || null,
+                status: false // Assuming default status is false/unsent
+              })
+            );
+            createdRecords.push({
+              type: card.type,
+              name: card.text,
+              spl_id
+            });
+          }
+        } else {
+          // Single record for other types
           requests.push(
             axios.post('/api/customers', {
               user_id: userData.userId,
@@ -305,7 +381,7 @@ export default function DataTable() {
               type: card.type,
               zone: location,
               phone: mobileNumber || null,
-              status: false // Assuming default status is false/unsent
+              status: false
             })
           );
           createdRecords.push({
@@ -314,64 +390,42 @@ export default function DataTable() {
             spl_id
           });
         }
-      } else {
-        // Single record for other types
-        requests.push(
-          axios.post('/api/customers', {
-            user_id: userData.userId,
-            recipt: receiptNumber,
-            spl_id: spl_id,
-            name: card.text,
-            type: card.type,
-            zone: location,
-            phone: mobileNumber || null,
-            status: false
-          })
-        );
-        createdRecords.push({
-          type: card.type,
-          name: card.text,
-          spl_id
-        });
       }
+
+      // Execute all requests
+      const responses = await Promise.all(requests);
+      console.log('Created records:', responses.map(r => r.data));
+
+      // 3. Refresh the data and show success
+      setModalSuccess(true);
+      fetchData(); // Refresh the main table data
+      
+      // Close modal after 1.5 seconds
+      setTimeout(() => {
+        closeEditModal();
+      }, 1500);
+
+    } catch (err) {
+      console.error('Update error:', err);
+      const errorMessage = err.response?.data?.error || 
+                          err.message || 
+                          'Failed to update records';
+      setModalError(errorMessage);
+      
+      // If the error occurred after delete but before create,
+      // we should refetch data to ensure consistency
+      fetchData();
+      
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Execute all requests
-    const responses = await Promise.all(requests);
-    console.log('Created records:', responses.map(r => r.data));
-
-    // 3. Refresh the data and show success
-    setModalSuccess(true);
-    fetchData(); // Refresh the main table data
-    
-    // Close modal after 1.5 seconds
-    setTimeout(() => {
-      closeEditModal();
-    }, 1500);
-
-  } catch (err) {
-    console.error('Update error:', err);
-    const errorMessage = err.response?.data?.error || 
-                        err.message || 
-                        'Failed to update records';
-    setModalError(errorMessage);
-    
-    // If the error occurred after delete but before create,
-    // we should refetch data to ensure consistency
-    fetchData();
-    
-  } finally {
-    setIsSubmitting(false);
-  }
-};
+  };
 
   const totalUsedHissas = calculateTotalHissaWeight();
   const remainingHissas = 7 - totalUsedHissas;
 
   if (isLoading) {
-    return (
-      <Shimmer />
-    );
+    return <Shimmer />;
   }
 
   if (error) {
@@ -386,170 +440,170 @@ export default function DataTable() {
     <div className="fixed-color-theme flex flex-col p-4 max-w-full min-h-screen">
       {/* Edit Modal */}
       {isEditModalOpen && (
-  <div className="edit-modal-overlay">
-    <div className="edit-modal-container">
-      <div className="edit-modal-content">
-        {/* Modal Header - Now outside the content-inner for sticky behavior */}
-        <div className="edit-modal-header">
-          <h2 className="edit-modal-title">
-            Edit Shares for Receipt: <span className="edit-modal-title-receipt">{currentReceipt}</span>
-          </h2>
-          <button 
-            onClick={closeEditModal}
-            className="edit-modal-close-btn"
-            aria-label="Close modal"
-          >
-            <X size={24} />
-          </button>
-        </div>
-        
-        {/* New content-inner wrapper for proper padding and structure */}
-        <div className="edit-modal-content-inner">
-          {/* Input Section */}
-          <div className="edit-modal-input-grid">
-            <select 
-              className="edit-modal-select custom-dropdown"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            >
-              {zones.map((zone, index) => (
-                <option key={index} value={zone}>
-                  {zone}
-                </option>
-              ))}
-            </select>
-            
-            <input 
-              type="text" 
-              placeholder="Enter Receipt Number *" 
-              className="edit-modal-input"
-              value={receiptNumber}
-              onChange={(e) => setReceiptNumber(e.target.value)}
-              required
-            />
-            
-            <input 
-              type="text" 
-              placeholder="Enter Mobile Number (Optional)" 
-              className="edit-modal-input"
-              value={mobileNumber}
-              onChange={(e) => setMobileNumber(e.target.value)}
-            />
-          </div>
-          
-          {/* Hissa Counter */}
-          <div className="edit-modal-counter">
-            <span className="edit-modal-counter-text">Hissa Usage</span>
-            <span className="edit-modal-counter-value">{totalUsedHissas}/7 Hissas</span>
-          </div>
-
-          {/* Cards Container */}
-          <div className="edit-modal-cards">
-            {hissaCards.map((card) => {
-              const isAqeeqahBoy = card.type === 'aqeeqah_boy';
-              const availableSlotsExcludingThisCard = 7 - (totalUsedHissas - (isAqeeqahBoy ? 2 : card.type ? 1 : 0));
+        <div className="edit-modal-overlay">
+          <div className="edit-modal-container">
+            <div className="edit-modal-content">
+              <div className="edit-modal-header">
+                <h2 className="edit-modal-title">
+                  Edit Shares for Receipt: <span className="edit-modal-title-receipt">{currentReceipt}</span>
+                </h2>
+                <button 
+                  onClick={closeEditModal}
+                  className="edit-modal-close-btn"
+                  aria-label="Close modal"
+                >
+                  <X size={24} />
+                </button>
+              </div>
               
-              return (
-                <div key={card.id} className={`edit-modal-card ${isAqeeqahBoy ? 'edit-modal-card-special' : ''}`}>
-                  <div className="edit-modal-card-header">
-                    <h3 className="edit-modal-card-title">
-                      Hissa {card.id} {isAqeeqahBoy && <span className="edit-modal-card-counts">(Counts as 2)</span>}
-                    </h3>
-                    {card.id !== 1 && (
-                      <button 
-                        className="edit-modal-card-remove"
-                        onClick={() => removeHissaCard(card.id)}
-                        aria-label="Remove Hissa"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
-                  
+              <div className="edit-modal-content-inner">
+                <div className="edit-modal-input-grid">
                   <select 
-                    value={card.type}
-                    onChange={(e) => handleSelectChange(card.id, e.target.value)}
-                    className="edit-modal-card-select custom-dropdown"
-                    required
+                    className="edit-modal-select custom-dropdown"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
                   >
-                    {hissaOptions.map((option, index) => {
-                      const isDisabled = option.value === "aqeeqah_boy" && 
-                        availableSlotsExcludingThisCard < 2;
-                      
-                      return (
-                        <option 
-                          key={index} 
-                          value={option.value}
-                          disabled={isDisabled}
-                        >
-                          {option.label}
-                        </option>
-                      );
-                    })}
+                    {zones.map((zone, index) => (
+                      <option key={index} value={zone}>
+                        {zone}
+                      </option>
+                    ))}
                   </select>
                   
                   <input 
                     type="text" 
-                    value={card.text}
-                    onChange={(e) => handleTextChange(card.id, e.target.value)}
-                    placeholder="Enter name * (Maximum 250 characters)" 
-                    className="edit-modal-card-input"
-                    maxLength={250}
+                    placeholder="Enter Receipt Number *" 
+                    className="edit-modal-input"
+                    value={receiptNumber}
+                    onChange={(e) => setReceiptNumber(e.target.value)}
                     required
                   />
+                  
+                  <input 
+                    type="text" 
+                    placeholder="Enter Mobile Number (Optional)" 
+                    className="edit-modal-input"
+                    value={mobileNumber}
+                    onChange={(e) => setMobileNumber(e.target.value)}
+                  />
                 </div>
-              );
-            })}
-          </div>
-          
-          {/* Error and Success Messages */}
-          {modalError && (
-            <div className="edit-modal-error">
-              {modalError}
-            </div>
-          )}
-          {modalSuccess && (
-            <div className="edit-modal-success">
-              Data updated successfully!
-            </div>
-          )}
-        </div>
-        
-        {/* Action Buttons - Also outside content-inner for sticky behavior */}
-        <div className="edit-modal-actions">
-          <button 
-            className="edit-modal-cancel"
-            onClick={closeEditModal}
-            disabled={isSubmitting}
-          >
-            Cancel
-          </button>
-          {remainingHissas >= 1 && (
-            <button 
-              onClick={addHissaCard} 
-              className="edit-modal-add-btn"
-            >
-              <span>Add Hissa</span>
-            </button>
-          )}
-          <button 
-            className="edit-modal-save"
-            onClick={handleUpdate}
-            disabled={isSubmitting || hissaCards.length === 0}
-          >
-            {isSubmitting ? (
-              <>
-                <span className="edit-modal-spinner"></span>
-                <span>Updating...</span>
-              </>
-            ) : 'Update'}
-          </button>
-        </div>
-      </div>
-    </div>
-  </div>
-)}
+                
+                <div className="edit-modal-counter">
+                  <span className="edit-modal-counter-text">Hissa Usage</span>
+                  <span className="edit-modal-counter-value">{totalUsedHissas}/7 Hissas</span>
+                </div>
 
+                <div className="edit-modal-cards">
+                  {hissaCards.map((card) => {
+                    const isPairedCard = card.pairId !== null;
+                    const isAqeeqahBoy = card.type === 'aqeeqah_boy';
+                    const availableSlotsExcludingThisCard = 7 - (totalUsedHissas - (isAqeeqahBoy && !isPairedCard ? 2 : card.type && !isPairedCard ? 1 : 0));
+                    
+                    return (
+                      <div 
+                        key={card.id} 
+                        className={`edit-modal-card ${isAqeeqahBoy ? 'aqeeqah-boy-card' : ''} ${isPairedCard ? 'paired-card' : ''}`}
+                      >
+                        <div className="edit-modal-card-header">
+                          <h3 className="edit-modal-card-title">
+                            Hissa {card.id} {isPairedCard ? `(Paired with Hissa ${card.pairId})` : ''}
+                          </h3>
+                          {card.id !== 1 && !isPairedCard && (
+                            <button 
+                              className="edit-modal-card-remove"
+                              onClick={() => removeHissaCard(card.id)}
+                              aria-label="Remove Hissa"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                        
+                        <select 
+                          value={card.type}
+                          onChange={(e) => handleSelectChange(card.id, e.target.value)}
+                          className="edit-modal-card-select custom-dropdown"
+                          required
+                          disabled={card.isDisabled}
+                        >
+                          {hissaOptions.map((option, index) => {
+                            const isDisabled = option.value === "aqeeqah_boy" && 
+                              availableSlotsExcludingThisCard < 2;
+                            
+                            return (
+                              <option 
+                                key={index} 
+                                value={option.value}
+                                disabled={isDisabled || card.isDisabled}
+                              >
+                                {option.label}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        
+                        <input 
+                          type="text" 
+                          value={card.text}
+                          onChange={(e) => handleTextChange(card.id, e.target.value)}
+                          placeholder={card.isDisabled ? "Mirrors paired card" : "Enter name * (Maximum 250 characters)"}
+                          className="edit-modal-card-input"
+                          maxLength={250}
+                          required={!card.isDisabled}
+                          disabled={card.isDisabled}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+                
+                {modalError && (
+                  <div className="edit-modal-error">
+                    {modalError}
+                  </div>
+                )}
+                {modalSuccess && (
+                  <div className="edit-modal-success">
+                    Data updated successfully!
+                  </div>
+                )}
+              </div>
+              
+              <div className="edit-modal-actions">
+                <button 
+                  className="edit-modal-cancel"
+                  onClick={closeEditModal}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                {remainingHissas >= 1 && (
+                  <button 
+                    onClick={addHissaCard} 
+                    className="edit-modal-add-btn"
+                  >
+                    <span>Add Hissa</span>
+                  </button>
+                )}
+                <button 
+                  className="edit-modal-save"
+                  onClick={handleUpdate}
+                  disabled={isSubmitting || hissaCards.length === 0}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <span className="edit-modal-spinner"></span>
+                      <span>Updating...</span>
+                    </>
+                  ) : 'Update'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rest of your DataTable component remains the same */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
         <h1 className="text-2xl font-bold">Records Management</h1>
         
