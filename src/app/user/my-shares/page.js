@@ -29,7 +29,6 @@ export default function DataTable() {
   const router = useRouter();
   
   const hissaOptions = [
-    { value: "", label: "SELECT" },
     { value: "Qurbani", label: "Qurbani" },
     { value: "Aqeeqah (Boy)", label: "Aqeeqah (Boy)" },
     { value: "Aqeeqah (Girl)", label: "Aqeeqah (Girl)" }

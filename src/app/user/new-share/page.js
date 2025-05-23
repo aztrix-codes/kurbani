@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
 const hissaOptions = [
-  { value: "", label: "SELECT" },
   { value: "Qurbani", label: "Qurbani" },
   { value: "Aqeeqah (Boy)", label: "Aqeeqah (Boy)" },
   { value: "Aqeeqah (Girl)", label: "Aqeeqah (Girl)" }
