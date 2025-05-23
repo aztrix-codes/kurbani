@@ -40,6 +40,8 @@ CREATE TABLE users (
     created_date DATETIME DEFAULT CURRENT_TIMESTAMP, 
     status TINYINT(1) DEFAULT 1, 
     img_url VARCHAR(255),
+    mumbai BOOLEAN DEFAULT FALSE,
+    out_of_mumbai BOOLEAN DEFAULT TRUE
     FOREIGN KEY (area_name) REFERENCES areas(area_name) ON UPDATE CASCADE
 );
 

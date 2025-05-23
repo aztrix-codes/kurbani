@@ -20,19 +20,56 @@ function UserLoginPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Check if user is already logged in
+  // Auto login on mount if credentials exist
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userData'));
-    if (userData?.isAuthenticated && userData?.status === 1) {
-      router.replace('/user');
+    const storedIdentifier = localStorage.getItem('identifier');
+    const storedPassword = localStorage.getItem('password');
+
+    if (userData?.isAuthenticated && userData?.status === 1 && storedIdentifier && storedPassword) {
+      autoLogin(storedIdentifier, storedPassword);
     }
-  }, [router]);
+  }, []);
+
+  const autoLogin = async (storedIdentifier, storedPassword) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const response = await fetch(
+        `/api/users/user?phoneOrEmail=${encodeURIComponent(storedIdentifier)}&password=${encodeURIComponent(storedPassword)}`
+      );
+      const data = await response.json();
+
+      if (response.ok && data.status === 1) {
+        localStorage.setItem('userData', JSON.stringify({
+          userId: data.user_id,
+          isAuthenticated: true,
+          status: data.status,
+          name: data.username,
+          img: data.img_url,
+          m: data.mumbai,
+          oom: data.out_of_mumbai
+        }));
+        router.replace('/user');
+      } else {
+        // Clear stored credentials if auto login fails
+        localStorage.removeItem('identifier');
+        localStorage.removeItem('password');
+        localStorage.removeItem('userData');
+        setError('Auto login failed. Please login manually.');
+      }
+    } catch (err) {
+      console.error('Auto login error:', err);
+      setError('Network error during auto login. Please login manually.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     
-    // Basic validation
     if (!identifier || !password) {
       setError('Please enter both identifier and password');
       return;
@@ -46,18 +83,21 @@ function UserLoginPage() {
       );
       
       const data = await response.json();
-      console.log(data)
 
       if (response.ok) {
         if (data.status === 1) {
-          // Store user data in localStorage
           localStorage.setItem('userData', JSON.stringify({
             userId: data.user_id,
             isAuthenticated: true,
             status: data.status,
             name: data.username,
-            img: data.img_url
+            img: data.img_url,
+            m: data.mumbai,
+            oom: data.out_of_mumbai
           }));
+          // Store credentials for auto login
+          localStorage.setItem('identifier', identifier);
+          localStorage.setItem('password', password);
           router.replace('/user');
         } else {
           setError('Your account is deactivated. Please contact support.');
@@ -234,7 +274,7 @@ function UserLoginPage() {
                 Email / Phone
               </label>
               <input
-                style={styles.formInput}
+                style={styles.formInput }               
                 type="text"
                 id="identifier"
                 placeholder="Enter your email or phone"

@@ -30,9 +30,9 @@ export default function DataTable() {
   
   const hissaOptions = [
     { value: "", label: "SELECT" },
-    { value: "qurbani", label: "Qurbani" },
-    { value: "aqeeqah_boy", label: "Aqeeqah (Boy)" },
-    { value: "aqeeqah_girl", label: "Aqeeqah (Girl)" }
+    { value: "Qurbani", label: "Qurbani" },
+    { value: "Aqeeqah (Boy)", label: "Aqeeqah (Boy)" },
+    { value: "Aqeeqah (Girl)", label: "Aqeeqah (Girl)" }
   ];
 
   useEffect(() => {
@@ -132,6 +132,40 @@ export default function DataTable() {
     }
   };
 
+  // Helper function to reorder and renumber cards
+  const reorderAndRenumberCards = (cards) => {
+    const orderedCards = [];
+    let displayId = 1;
+
+    // First pass: collect all main cards (non-paired)
+    const mainCards = cards.filter(card => card.pairId === null);
+    
+    mainCards.forEach(mainCard => {
+      // Add the main card with new display ID
+      const newMainCard = { ...mainCard, id: displayId };
+      orderedCards.push(newMainCard);
+      
+      // If it's Aqeeqah (Boy), add its paired card immediately after
+      if (mainCard.type === 'Aqeeqah (Boy)') {
+        const pairedCard = cards.find(card => card.pairId === mainCard.id);
+        if (pairedCard) {
+          orderedCards.push({
+            ...pairedCard,
+            id: displayId + 1,
+            pairId: displayId
+          });
+          displayId += 2; // Skip two IDs (main + paired)
+        } else {
+          displayId += 1;
+        }
+      } else {
+        displayId += 1;
+      }
+    });
+
+    return orderedCards;
+  };
+
   // Modal functions
   const openEditModal = (receipt) => {
     setCurrentReceipt(receipt);
@@ -141,7 +175,7 @@ export default function DataTable() {
     const cards = [];
     let idCounter = 1;
     
-    // Group by name and type to handle aqeeqah_boy duplicates
+    // Group by name and type to handle Aqeeqah (Boy) duplicates
     const recordsMap = new Map();
     recordsWithSameReceipt.forEach(record => {
       const key = `${record.name}-${record.type}`;
@@ -151,22 +185,24 @@ export default function DataTable() {
     });
 
     recordsMap.forEach(record => {
-      if (record.type === 'aqeeqah_boy') {
+      if (record.type === 'Aqeeqah (Boy)') {
         // Add primary card
-        cards.push({
+        const mainCard = {
           id: idCounter++,
           type: record.type,
           text: record.name,
           isDisabled: false,
           pairId: null
-        });
-        // Add paired disabled card
+        };
+        cards.push(mainCard);
+        
+        // Add paired disabled card immediately after
         cards.push({
           id: idCounter++,
           type: record.type,
           text: record.name,
           isDisabled: true,
-          pairId: cards[cards.length - 1].id
+          pairId: mainCard.id
         });
       } else {
         cards.push({
@@ -196,7 +232,8 @@ export default function DataTable() {
   const calculateTotalHissaWeight = () => {
     return hissaCards.reduce((total, card) => {
       if (card.pairId !== null) return total; // Skip paired cards to avoid double counting
-      return total + (card.type === "aqeeqah_boy" ? 2 : card.type ? 1 : 0);
+      // Count card weight only if type is selected
+      return total + (card.type === "Aqeeqah (Boy)" ? 2 : card.type ? 1 : 0);
     }, 0);
   };
 
@@ -208,7 +245,8 @@ export default function DataTable() {
   const addHissaCard = () => {
     if (calculateRemainingCardSlots() >= 1) {
       const newId = hissaCards.length > 0 ? Math.max(...hissaCards.map(c => c.id)) + 1 : 1;
-      setHissaCards([...hissaCards, { id: newId, type: "qurbani", text: "", isDisabled: false, pairId: null }]);
+      const newCards = [...hissaCards, { id: newId, type: "", text: "", isDisabled: false, pairId: null }];
+      setHissaCards(reorderAndRenumberCards(newCards));
     } else {
       setModalError("Cannot add more hissas. Maximum of 7 hissas allowed.");
     }
@@ -216,48 +254,51 @@ export default function DataTable() {
 
   const handleSelectChange = (id, value) => {
     setHissaCards(prevCards => {
-      // Remove any existing pair for this card
-      const cardsWithoutPair = prevCards.filter(card => card.pairId !== id);
+      // Remove any existing pair for this card first
+      const cardsWithoutExistingPair = prevCards.filter(card => card.pairId !== id);
       
       // Find the card being changed
-      const cardIndex = cardsWithoutPair.findIndex(card => card.id === id);
+      const cardIndex = cardsWithoutExistingPair.findIndex(card => card.id === id);
       if (cardIndex === -1) return prevCards;
       
-      const updatedCards = [...cardsWithoutPair];
-      const currentCard = updatedCards[cardIndex];
+      const currentCard = cardsWithoutExistingPair[cardIndex];
       
-      // Calculate if we have space for the change
-      const currentWeight = currentCard.type === "aqeeqah_boy" ? 2 : currentCard.type ? 1 : 0;
-      const newWeight = value === "aqeeqah_boy" ? 2 : value ? 1 : 0;
-      const totalWeight = calculateTotalHissaWeight();
+      // Calculate weight changes
+      const currentWeight = currentCard.type === "Aqeeqah (Boy)" ? 2 : currentCard.type ? 1 : 0;
+      const newWeight = value === "Aqeeqah (Boy)" ? 2 : value ? 1 : 0;
+      const totalCurrentWeight = calculateTotalHissaWeight();
       
-      if (totalWeight - currentWeight + newWeight > 7) {
+      // Check if the change would exceed the limit
+      if (totalCurrentWeight - currentWeight + newWeight > 7) {
         setModalError("Cannot add more hissas. Maximum of 7 hissas allowed.");
         return prevCards;
       }
+      
+      let updatedCards = [...cardsWithoutExistingPair];
       
       // Update the main card
       updatedCards[cardIndex] = {
         ...currentCard,
         type: value,
-        text: value === "aqeeqah_boy" ? currentCard.text : currentCard.text
+        text: currentCard.text
       };
       
-      // If changing to aqeeqah_boy, add a paired disabled card
-      if (value === "aqeeqah_boy") {
-        const pairId = id;
-        const newPairCard = {
-          id: Math.max(...updatedCards.map(c => c.id), 0) + 1,
+      // If changing to Aqeeqah (Boy), we need to add a paired card
+      if (value === "Aqeeqah (Boy)") {
+        // The paired card will be handled by reorderAndRenumberCards
+        // For now, just add it with a temporary high ID
+        const tempPairCard = {
+          id: 9999, // Temporary ID that will be fixed by reorderAndRenumberCards
           type: value,
           text: currentCard.text,
           isDisabled: true,
-          pairId: pairId
+          pairId: id // Reference to the original main card ID
         };
-        updatedCards.push(newPairCard);
+        updatedCards.push(tempPairCard);
       }
       
       setModalError(null);
-      return updatedCards;
+      return reorderAndRenumberCards(updatedCards);
     });
   };
 
@@ -285,12 +326,7 @@ export default function DataTable() {
         card.id !== id && card.pairId !== id
       );
       
-      // Reindex the remaining cards
-      return cardsToKeep.map((card, index) => ({
-        ...card,
-        id: index + 1,
-        pairId: card.pairId ? index : null // Update pairId reference if needed
-      }));
+      return reorderAndRenumberCards(cardsToKeep);
     });
   };
 
@@ -335,7 +371,9 @@ export default function DataTable() {
       console.log('Delete response:', deleteResponse.data);
 
       // 2. Create new records with the updated data
-      const validCards = hissaCards.filter(card => 
+      // Get ordered cards for API submission - this ensures Aqeeqah (Boy) pairs are together
+      const orderedCards = reorderAndRenumberCards(hissaCards);
+      const validCards = orderedCards.filter(card => 
         card.type && card.text.trim() && !card.isDisabled
       );
       
@@ -349,8 +387,8 @@ export default function DataTable() {
       for (const card of validCards) {
         const spl_id = generateSplId(card.text);
         
-        if (card.type === "aqeeqah_boy") {
-          // Create two identical records for aqeeqah_boy (counts as 2 hissas)
+        if (card.type === "Aqeeqah (Boy)") {
+          // Create two identical records for Aqeeqah (Boy) (counts as 2 hissas)
           for (let i = 0; i < 2; i++) {
             requests.push(
               axios.post('/api/customers', {
@@ -496,7 +534,7 @@ export default function DataTable() {
                 <div className="edit-modal-cards">
                   {hissaCards.map((card) => {
                     const isPairedCard = card.pairId !== null;
-                    const isAqeeqahBoy = card.type === 'aqeeqah_boy';
+                    const isAqeeqahBoy = card.type === 'Aqeeqah (Boy)';
                     const availableSlotsExcludingThisCard = 7 - (totalUsedHissas - (isAqeeqahBoy && !isPairedCard ? 2 : card.type && !isPairedCard ? 1 : 0));
                     
                     return (
@@ -527,7 +565,7 @@ export default function DataTable() {
                           disabled={card.isDisabled}
                         >
                           {hissaOptions.map((option, index) => {
-                            const isDisabled = option.value === "aqeeqah_boy" && 
+                            const isDisabled = option.value === "Aqeeqah (Boy)" && 
                               availableSlotsExcludingThisCard < 2;
                             
                             return (

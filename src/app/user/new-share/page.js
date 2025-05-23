@@ -7,9 +7,9 @@ import axios from 'axios';
 
 const hissaOptions = [
   { value: "", label: "SELECT" },
-  { value: "qurbani", label: "Qurbani" },
-  { value: "aqeeqah_boy", label: "Aqeeqah (Boy)" },
-  { value: "aqeeqah_girl", label: "Aqeeqah (Girl)" }
+  { value: "Qurbani", label: "Qurbani" },
+  { value: "Aqeeqah (Boy)", label: "Aqeeqah (Boy)" },
+  { value: "Aqeeqah (Girl)", label: "Aqeeqah (Girl)" }
 ];
 
 export default function QurbaniApp() {
@@ -23,14 +23,22 @@ export default function QurbaniApp() {
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter();
   const [zones, setZones] = useState(['Out of Mumbai', 'Mumbai'])
+
   
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userData'));
-    if (
-      userData.userId === 0 &&
-      userData.isAuthenticated === false &&
-      userData.status === 0
-    ) {
+    if(userData.isAuthenticated) {
+        if (userData.m && userData.oom) {
+        setZones(['Out of Mumbai', 'Mumbai']);
+        setLocation('Out of Mumbai'); 
+      } else if (userData.m) {
+        setZones(['Mumbai']);
+        setLocation('Mumbai');
+      } else {
+        setZones(['Out of Mumbai']);
+        setLocation('Out of Mumbai');
+      }
+    } else{
       router.replace('/auth/user');
     }
   }, [router]);
@@ -47,8 +55,8 @@ export default function QurbaniApp() {
 
   const calculateTotalHissaWeight = () => {
     return hissaCards.reduce((total, card) => {
-      if (card.pairId !== null && !card.isDisabled) return total; // Skip the paired card to avoid double counting
-      return total + (card.type === "aqeeqah_boy" ? 1 : card.type ? 1 : 0);
+      if (card.pairId !== null && card.isDisabled) return total; // Skip paired cards
+      return total + (card.type === "Aqeeqah (Boy)" ? 2 : card.type ? 1 : 0);
     }, 0);
   };
 
@@ -57,10 +65,60 @@ export default function QurbaniApp() {
     return 7 - totalWeight;
   };
 
+  // Helper function to reorder cards so paired cards appear right after their parent and reassign IDs
+  const reorderCards = (cards) => {
+    const result = [];
+    const processedIds = new Set();
+    let currentId = 1;
+    
+    // First, sort cards by their original ID to maintain relative order
+    const sortedCards = [...cards].sort((a, b) => {
+      // If one is a pair of the other, handle specially
+      if (a.pairId === b.id) return 1;
+      if (b.pairId === a.id) return -1;
+      return a.id - b.id;
+    });
+    
+    sortedCards.forEach(card => {
+      if (processedIds.has(card.id)) return;
+      
+      // Add the main card with new sequential ID
+      if (!card.isDisabled) {
+        const newMainCard = { ...card, id: currentId };
+        result.push(newMainCard);
+        processedIds.add(card.id);
+        
+        // If this card has a pair, add it right after with next sequential ID
+        const pairedCard = cards.find(c => c.pairId === card.id);
+        if (pairedCard) {
+          const newPairedCard = { 
+            ...pairedCard, 
+            id: currentId + 1, 
+            pairId: currentId 
+          };
+          result.push(newPairedCard);
+          processedIds.add(pairedCard.id);
+          currentId += 2; // Skip 2 IDs since we used currentId and currentId + 1
+        } else {
+          currentId += 1; // Skip 1 ID
+        }
+      }
+    });
+    
+    return result;
+  };
+
   const addHissaCard = () => {
-    if (calculateRemainingCardSlots() >= 1) {
+    // Calculate remaining slots including cards without type selected
+    const totalCards = hissaCards.filter(card => !card.isDisabled).length;
+    const remainingSlots = calculateRemainingCardSlots();
+    
+    if (remainingSlots >= 1 && totalCards < 7) {
       const newId = hissaCards.length > 0 ? Math.max(...hissaCards.map(c => c.id)) + 1 : 1;
-      setHissaCards([...hissaCards, { id: newId, type: "qurbani", text: "", isDisabled: false, pairId: null }]);
+      setHissaCards(prevCards => {
+        const newCards = [...prevCards, { id: newId, type: "Qurbani", text: "", isDisabled: false, pairId: null }];
+        return reorderCards(newCards);
+      });
     } else {
       setError("Cannot add more hissas. Maximum of 7 hissas allowed.");
     }
@@ -79,11 +137,16 @@ export default function QurbaniApp() {
       const currentCard = updatedCards[cardIndex];
       
       // Calculate if we have space for the change
-      const currentWeight = currentCard.type === "aqeeqah_boy" ? 2 : currentCard.type ? 1 : 0;
-      const newWeight = value === "aqeeqah_boy" ? 2 : value ? 1 : 0;
-      const totalWeight = calculateTotalHissaWeight();
+      const currentWeight = currentCard.type === "Aqeeqah (Boy)" ? 2 : currentCard.type ? 1 : 0;
+      const newWeight = value === "Aqeeqah (Boy)" ? 2 : value ? 1 : 0;
       
-      if (totalWeight - currentWeight + newWeight > 7) {
+      // Calculate total weight excluding the current card
+      const totalWeightExcludingCurrent = updatedCards.reduce((total, card) => {
+        if (card.id === id || (card.pairId !== null && card.isDisabled)) return total;
+        return total + (card.type === "Aqeeqah (Boy)" ? 2 : card.type ? 1 : 0);
+      }, 0);
+      
+      if (totalWeightExcludingCurrent + newWeight > 7) {
         setError("Cannot add more hissas. Maximum of 7 hissas allowed.");
         return prevCards;
       }
@@ -92,24 +155,23 @@ export default function QurbaniApp() {
       updatedCards[cardIndex] = {
         ...currentCard,
         type: value,
-        text: value === "aqeeqah_boy" ? currentCard.text : currentCard.text
+        text: currentCard.text
       };
       
-      // If changing to aqeeqah_boy, add a paired disabled card
-      if (value === "aqeeqah_boy") {
-        const pairId = id;
+      // If changing to Aqeeqah (Boy), add a paired disabled card
+      if (value === "Aqeeqah (Boy)") {
         const newPairCard = {
-          id: Math.max(...updatedCards.map(c => c.id), 0) + 1,
+          id: id + 0.1, // Temporary ID to ensure it gets placed after the main card
           type: value,
           text: currentCard.text,
           isDisabled: true,
-          pairId: pairId
+          pairId: id
         };
         updatedCards.push(newPairCard);
       }
       
       setError(null);
-      return updatedCards;
+      return reorderCards(updatedCards);
     });
   };
 
@@ -129,20 +191,13 @@ export default function QurbaniApp() {
     if (id === 1 || hissaCards.length === 1) return;
     
     setHissaCards(prevCards => {
-      // Find the card to remove
-      const cardToRemove = prevCards.find(card => card.id === id);
-      
       // Remove both the card and its pair if exists
       const cardsToKeep = prevCards.filter(card => 
         card.id !== id && card.pairId !== id
       );
       
-      // Reindex the remaining cards
-      return cardsToKeep.map((card, index) => ({
-        ...card,
-        id: index + 1,
-        pairId: card.pairId ? index : null // Update pairId reference if needed
-      }));
+      // Reorder and reassign IDs
+      return reorderCards(cardsToKeep);
     });
   };
 
@@ -166,9 +221,10 @@ export default function QurbaniApp() {
       }
 
       // Filter out empty cards and only include primary cards (not disabled pairs)
-      const validCards = hissaCards.filter(card => 
-        card.type && card.text.trim() && !card.isDisabled
-      );
+      // Sort by ID to ensure proper order for API calls
+      const validCards = hissaCards
+        .filter(card => card.type && card.text.trim() && !card.isDisabled)
+        .sort((a, b) => a.id - b.id);
       
       if (validCards.length === 0) {
         throw new Error('At least one valid hissa with type and name is required');
@@ -179,8 +235,8 @@ export default function QurbaniApp() {
       validCards.forEach(card => {
         const spl_id = generateSplId(card.text);
         
-        if (card.type === "aqeeqah_boy") {
-          // Send two identical requests for aqeeqah boy
+        if (card.type === "Aqeeqah (Boy)") {
+          // Send two identical requests for aqeeqah boy in sequence
           requests.push(
             axios.post('/api/customers', {
               user_id: userData.userId,
@@ -219,7 +275,10 @@ export default function QurbaniApp() {
         }
       });
 
-      await Promise.all(requests);
+      // Execute requests sequentially to maintain order
+      for (const request of requests) {
+        await request;
+      }
       
       setSuccess(true);
       setHissaCards([{ id: 1, type: "", text: "", isDisabled: false, pairId: null }]);
@@ -235,6 +294,9 @@ export default function QurbaniApp() {
 
   const totalUsedHissas = calculateTotalHissaWeight();
   const remainingHissas = 7 - totalUsedHissas;
+
+  // Reorder cards for display
+  const orderedCards = reorderCards(hissaCards);
 
   return (
     <div className="app-container">   
@@ -291,9 +353,9 @@ export default function QurbaniApp() {
         </div>
         
         <div className="cards-container">
-          {hissaCards.map((card) => {
+          {orderedCards.map((card) => {
             const isPairedCard = card.pairId !== null;
-            const isAqeeqahBoy = card.type === 'aqeeqah_boy';
+            const isAqeeqahBoy = card.type === 'Aqeeqah (Boy)';
             
             return (
               <div 

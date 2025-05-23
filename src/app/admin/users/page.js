@@ -29,6 +29,32 @@ export default function UserManagementPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAreasLoading, setIsAreasLoading] = useState(true);
 
+  const updateUserLocation = async (userId, location) => {
+    try {
+      await axios.patch('/api/users/user', null, {
+        params: {
+          user_id: userId,
+          location: location
+        }
+      });
+
+      // Update local state to reflect the change
+      setUsers(users.map(user => {
+        if (user.id === userId) {
+          return {
+            ...user,
+            mumbai: location === 'm' || location === 'both',
+            out_of_mumbai: location === 'oom' || location === 'both'
+          };
+        }
+        return user;
+      }));
+    } catch (error) {
+      console.error('Error updating location:', error);
+      alert('Failed to update location status');
+    }
+  };
+
   // Format date to "YYYY-MM-DD HH:MM am/pm" format
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -79,7 +105,9 @@ export default function UserManagementPage() {
         area: user.area_name,
         approved: user.status === 1,
         createdDate: formatDate(user.created_date),
-        pfp: user.img_url
+        pfp: user.img_url,
+        mumbai: user.mumbai,
+        out_of_mumbai: user.out_of_mumbai
       }));
       setUsers(mappedUsers);
     } catch (error) {
@@ -88,6 +116,13 @@ export default function UserManagementPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getLocationStatus = (user) => {
+    if (user.mumbai && user.out_of_mumbai) return 'both';
+    if (user.mumbai) return 'm';
+    if (user.out_of_mumbai) return 'oom';
+    return 'oom'; // default
   };
 
   useEffect(() => {
@@ -307,6 +342,7 @@ export default function UserManagementPage() {
             <div className="table-cell">Password</div>
             <div className="table-cell">Approved</div>
             <div className="table-cell">Created Date</div>
+            <div className="table-cell">Location</div>
             <div className="table-cell">Actions</div>
           </div>
           <div className="table-body">
@@ -339,6 +375,17 @@ export default function UserManagementPage() {
                   </Switch>
                 </div>
                 <div className="table-cell">{user.createdDate}</div>
+                <div className="table-cell">
+                  <select
+                    value={getLocationStatus(user)}
+                    onChange={(e) => updateUserLocation(user.id, e.target.value)}
+                    className="location-dropdown"
+                  >
+                    <option value="m">Mumbai</option>
+                    <option value="oom">OOM</option>
+                    <option value="both">Both</option>
+                  </select>
+                </div>
                 <div className="table-cell actions-cell">
                   <button 
                     onClick={() => handleEdit(user)} 

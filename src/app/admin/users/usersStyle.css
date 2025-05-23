@@ -172,6 +172,7 @@
 .table-heads .table-cell:nth-child(8)  { width: 10%; text-wrap: wrap; justify-content: center; text-align: center;} /* Created Date */
 .table-heads .table-cell:nth-child(9) {width: 10%; justify-content: center;justify-content: center; text-align: center;} /* Actions */
 .table-heads .table-cell:nth-child(10) {width: 9%; justify-content: center;  text-align: center;} /* Actions */
+.table-heads .table-cell:nth-child(11) {width: 9%; justify-content: center;  text-align: center;} /* Actions */
 
  .table-body .table-cell:nth-child(1) { width: 6%; text-wrap: wrap; justify-content: center; text-align: center;}  /* Sr no */
  .table-body .table-cell:nth-child(2) { width: 5%; text-wrap: wrap; justify-content: center} /* Nigra */
@@ -183,7 +184,62 @@
 .table-body .table-cell:nth-child(8) { width: 10%; text-wrap: wrap; justify-content: center; text-align: center; } /* Created Date */
 .table-body .table-cell:nth-child(9) {width: 10%; justify-content: center; justify-content: center; text-align: center; text-wrap: wrap;} /* Actions */
 .table-body .table-cell:nth-child(10) {width: 9%; justify-content: center; text-align: center;} /* Actions */
+.table-body .table-cell:nth-child(11) {width: 9%; justify-content: center; text-align: center;} /* Actions */
 
+/* Add this to your usersStyle.css file */
+
+.location-dropdown {
+  /* Remove default dropdown styling */
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: none; /* Remove dropdown arrow */
+  
+  /* Text styling */
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+  text-align: center;
+  
+  /* Border and background */
+  border: none;
+  background: transparent;
+  outline: none;
+  
+  /* Size and spacing */
+  padding: 2px 4px;
+  min-width: 60px; /* Adjust as needed */
+  max-width: 100px; /* Adjust as needed */
+  cursor: pointer;
+  
+  /* Hover effect */
+  transition: all 0.2s ease;
+}
+
+.location-dropdown:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+
+/* Remove the dropdown arrow in IE */
+.location-dropdown::-ms-expand {
+  display: none;
+}
+
+/* Style the options */
+.location-dropdown option {
+  background: white;
+  color: #333;
+  padding: 4px 8px;
+}
+
+/* For the table cell containing the dropdown */
+.table-cell select.location-dropdown {
+  margin: 0 auto;
+  display: block;
+  width: auto;
+}
 /* Toggle Switch Styles */
 .toggle-switch {
   display: inline-flex;
@@ -538,7 +594,7 @@
   }
   
   .table-scroll-wrapper {
-    width: 390%;
+    width: 400%;
     min-width: 100%;
     display: block; /* Change from flex to block if needed */
   }
