@@ -10,7 +10,8 @@
   right: 0;
   left: 0;
   top: 0;
-  padding-top: 10vh;
+  padding-top: 15vh;
+  overflow-y: scroll;
 }
 
 .page-title {
@@ -25,7 +26,6 @@
   display: grid;
   gap: 1.5rem;
   width: 100%;
-  max-width: 1200px;
   margin: 0 auto;
 }
 
@@ -83,7 +83,7 @@
   }
   .page-container {
     padding: 1.5rem;
-    padding-top: 4rem;
+    padding-top: 5.5rem;
   }
   .page-title {
     font-size: 1.5rem;
@@ -111,6 +111,6 @@
 /* Desktop (4 columns) */
 @media (min-width: 1024px) {
   .tiles-grid {
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
   }
 }

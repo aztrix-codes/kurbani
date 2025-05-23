@@ -24,8 +24,7 @@ export default function DashboardLayout({ children }) {
     router.replace('/auth/user');
   };
   
-  // Using client-side data fetching with useEffect to avoid hydration mismatch
-  // We need to ensure this component only runs on the client
+
   const [userData, setUserData] =useState({
     name: 'User',
     img: null
@@ -43,7 +42,6 @@ export default function DashboardLayout({ children }) {
       <header className="dashboard-header">
         <div className="header-content">
           <div className="header-left">
-            {/* Back button - only visible when not on /user */}
             <div
               className={`back-button ${!isUserPage ? 'visible' : ''}`}
               onClick={handleBackClick}
@@ -61,13 +59,13 @@ export default function DashboardLayout({ children }) {
                 alt="User profile"
                 className="user-avatar"
               />
-              <span className="username">{userData.name}</span>
+              <span className="username widescreen">{userData.name}</span>
+              <span className="username mobilescreen">{userData.name.length > 20 ? userData.name.slice(0, 20 - 3) + '...' : userData.name}</span>
             </div>
           </div>
           <button className="logout-button" onClick={handleLogout}>
             <img
               src='https://img.icons8.com/?size=100&id=59995&format=png&color=ffffff'
-              style={{ width: '1.8rem', height: '1.8rem' }}
               alt="Logout"
             />
           </button>

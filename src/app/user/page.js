@@ -70,7 +70,6 @@ function Page() {
     <div className="page-container">      
       <div className="tiles-grid">
         {menuItems.filter(item => {
-          // Show item if no region specified or region is in regionFilter array
           return !item.region || regionFilter.includes(item.region);
         }).map((item, index) => (
           <Link key={index} href={item.href} className="tile-link">

@@ -59,16 +59,16 @@
 }
 
 .user-avatar {
-  width: 32px;
-  height: 32px;
+  width: 3vw;
+  height: 3vw;
   border-radius: 9999px;
   object-fit: cover;
   background-color: #e5e7eb;
 }
 
 .username {
-  font-weight: 500;
-  font-size: 1rem;
+  font-weight: 400;
+  font-size: 1.5vw;
   letter-spacing: 0.05rem;
   color: #fff;
 }
@@ -80,14 +80,46 @@
   padding: 0;
 }
 
+.logout-button img {
+  width: 2vw;
+  height: 2vw;
+}
 .dashboard-main {
   flex: 1;
   width: 100%;
   background-color: #f8fafc;
 }
 
+.widescreen {
+    display: block;
+  }
+  .mobilescreen {
+    display: none;
+  }
+
 @media (max-width: 768px) {
   .header-content {
     padding: 0.75rem 1rem;
+  }
+
+  .username {
+    font-size: 1.2rem;
+  }
+
+  .user-avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .logout-button img {
+    width: 2rem;
+    height: 2rem;
+  }
+
+  .widescreen {
+    display: none;
+  }
+  .mobilescreen {
+    display: block;
   }
 }
