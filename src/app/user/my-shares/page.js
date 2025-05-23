@@ -71,21 +71,21 @@ export default function DataTable() {
 
   const exportToExcel = () => {
     try {
-      const dataToExport = data.filter(item => item.status === 1);
+      const dataToExport = data;
       
       if (dataToExport.length === 0) {
         alert("No records with 'Sent' status found to export.");
         return;
       }
       
-      const excelData = dataToExport.map(item => ({
-        'Sr No.': item.id,
+      const excelData = dataToExport.map((item, index) => ({
+        'Sr No.': index + 1,
         'Receipt No.': item.recipt,
         'Name': item.name,
         'Type': item.type,
         'Zone': item.zone,
         'Phone': item.phone || '',
-        'Status': 'Sent'
+        'Status': item.status === 1 ? 'Sent' : 'Pending'
       }));
       
       const worksheet = XLSX.utils.json_to_sheet(excelData);

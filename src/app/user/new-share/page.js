@@ -13,7 +13,7 @@ const hissaOptions = [
 ];
 
 export default function QurbaniApp() {
-  const [hissaCards, setHissaCards] = useState([{ id: 1, type: "", text: "", isDisabled: false, pairId: null }]);
+  const [hissaCards, setHissaCards] = useState([{ id: 1, type: "Qurbani", text: "", isDisabled: false, pairId: null }]);
   const [location, setLocation] = useState("Out Of Mumbai");
   const [receiptNumber, setReceiptNumber] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
@@ -146,6 +146,53 @@ export default function QurbaniApp() {
         return total + (card.type === "Aqeeqah (Boy)" ? 2 : card.type ? 1 : 0);
       }, 0);
       
+      // Special case: If changing to Aqeeqah (Boy) and total weight would exceed 7
+      if (value === "Aqeeqah (Boy)" && totalWeightExcludingCurrent + newWeight > 7) {
+        // Get non-disabled cards sorted by ID
+        const nonDisabledCards = updatedCards.filter(card => !card.isDisabled).sort((a, b) => a.id - b.id);
+        
+        // If we have exactly 7 non-disabled cards
+        if (nonDisabledCards.length === 7) {
+          // Find the position of the current card among non-disabled cards
+          const currentCardPosition = nonDisabledCards.findIndex(card => card.id === id);
+          
+          // If this is the 6th card (index 5), remove the 7th card (index 6)
+          if (currentCardPosition === 5) {
+            const seventhCard = nonDisabledCards[6];
+            
+            // Remove the 7th card and any of its pairs from the original cards
+            let finalCards = updatedCards.filter(card => 
+              card.id !== seventhCard.id && card.pairId !== seventhCard.id
+            );
+            
+            // Update the current card (6th card) to Aqeeqah (Boy)
+            finalCards = finalCards.map(card => {
+              if (card.id === id) {
+                return { ...card, type: value, text: card.text };
+              }
+              return card;
+            });
+            
+            // Add the paired card for the current card
+            const newPairCard = {
+              id: id + 0.1, // Temporary ID to ensure it gets placed after the main card
+              type: value,
+              text: currentCard.text,
+              isDisabled: true,
+              pairId: id
+            };
+            finalCards.push(newPairCard);
+            
+            setError(null);
+            return reorderCards(finalCards);
+          }
+        }
+        
+        setError("Cannot add more hissas. Maximum of 7 hissas allowed.");
+        return prevCards;
+      }
+      
+      // Regular case: check if we have space
       if (totalWeightExcludingCurrent + newWeight > 7) {
         setError("Cannot add more hissas. Maximum of 7 hissas allowed.");
         return prevCards;
@@ -281,7 +328,7 @@ export default function QurbaniApp() {
       }
       
       setSuccess(true);
-      setHissaCards([{ id: 1, type: "", text: "", isDisabled: false, pairId: null }]);
+      setHissaCards([{ id: 1, type: "Qurbani", text: "", isDisabled: false, pairId: null }]);
       setReceiptNumber("");
       setMobileNumber("");
     } catch (err) {

@@ -101,24 +101,7 @@ function ContactPage() {
         <div className="contact-content">
           {/* Contact Information */}
           <div className="contact-info">
-            {/* Qurbani Issues */}
-            <div className="contact-section">
-              <h2>Qurbani Issues</h2>
-              <div className="contact-item">
-                <Phone className="contact-icon" size={20} />
-                <div className="contact-details">
-                  <div className="contact-name">Ilyas Razvi</div>
-                  <div className="contact-value">+918291110603</div>
-                </div>
-              </div>
-              <div className="contact-item">
-                <Phone className="contact-icon" size={20} />
-                <div className="contact-details">
-                  <div className="contact-name">Imran Rathod</div>
-                  <div className="contact-value">+919324896595</div>
-                </div>
-              </div>
-            </div>
+
 
             {/* Technical Issues */}
             <div className="contact-section">
@@ -138,6 +121,28 @@ function ContactPage() {
                 </div>
               </div>
             </div>
+            
+
+            {/* Qurbani Issues */}
+            <div className="contact-section">
+              <h2>Qurbani Issues</h2>
+              <div className="contact-item">
+                <Phone className="contact-icon" size={20} />
+                <div className="contact-details">
+                  <div className="contact-name">Ilyas Razvi</div>
+                  <div className="contact-value">+918291110603</div>
+                </div>
+              </div>
+              <div className="contact-item">
+                <Phone className="contact-icon" size={20} />
+                <div className="contact-details">
+                  <div className="contact-name">Imran Rathod</div>
+                  <div className="contact-value">+919324896595</div>
+                </div>
+              </div>
+            </div>
+
+            
 
             {/* Additional Contact Methods */}
             <div className="contact-methods">
