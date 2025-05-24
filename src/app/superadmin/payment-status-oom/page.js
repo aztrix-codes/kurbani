@@ -107,7 +107,7 @@ const FinancialTable = () => {
               <div style={{...styles.tableCell, ...styles.cellId, ...styles.headerCell}}>ID</div>
               <div style={{...styles.tableCell, ...styles.cellZone, ...styles.headerCell}}>ZONE</div>
               <div style={{...styles.tableCell, ...styles.cellArea, ...styles.headerCell}}>AREA</div>
-              <div style={{...styles.tableCell, ...styles.cellSubmitted, ...styles.headerCell}}>SUBMITTED BY</div>
+              <div style={{...styles.tableCell, ...styles.cellSubmitted, ...styles.headerCell}}>NIGRA</div>
               <div style={{...styles.tableCell, ...styles.cellHissa, ...styles.headerCell}}>TOTAL HISSA</div>
               <div style={{...styles.tableCell, ...styles.cellAmount, ...styles.headerCell}}>TOTAL AMOUNT</div>
               <div style={{...styles.tableCell, ...styles.cellPaid, ...styles.headerCell}}>TOTAL PAID</div>

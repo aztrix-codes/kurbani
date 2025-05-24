@@ -35,8 +35,8 @@
   display: flex;
   align-items: center;
   gap: 1vw;
-  padding: 1.2vw 2vw;
-  border-radius: 1vw;
+  padding: 1vw 0;
+  border-radius: 5vw;
   font-size: 1.2vw;
   font-weight: 600;
   border: none;
@@ -44,6 +44,9 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 0.8vw 2.5vw rgba(0,0,0,0.15);
   color: white;
+  letter-spacing: 0.1vw;
+  width: 10vw;
+  justify-content: center;
 }
 
 .dashboard-lock-button:hover {
@@ -135,7 +138,7 @@
 }
 
 .dashboard-lock-button.locked {
-  background-color: #ef4444;
+  background-color: #c13636;
 }
 
 .dashboard-lock-button.unlocked {
