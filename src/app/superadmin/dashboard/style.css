@@ -1,0 +1,143 @@
+.dashboard-container {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1vw 2vw;
+  flex-wrap: wrap;
+  gap: 2vw;
+}
+
+.dashboard-header-left {
+  flex: 1;
+  min-width: 300px;
+}
+
+.dashboard-title {
+  font-size: 3vw;
+  font-weight: 600;
+  color: #1f2937;
+  margin: 0 0 0.5vw 0;
+}
+
+.dashboard-subtitle {
+  font-size: 1.5vw;
+  color: #6b7280;
+  margin: 0;
+}
+
+.dashboard-lock-button {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+  padding: 1.2vw 2vw;
+  border-radius: 1vw;
+  font-size: 1.2vw;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0.8vw 2.5vw rgba(0,0,0,0.15);
+  color: white;
+}
+
+.dashboard-lock-button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 1.2vw 3vw rgba(0,0,0,0.2);
+}
+
+.dashboard-cards-container {
+  padding: 0 2vw 2vw 2vw;
+}
+
+.dashboard-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(15vw, 1fr));
+  gap: 2vw;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.dashboard-card {
+  background-color: white;
+  border-radius: 1.5vw;
+  padding: 1vw;
+  height: 18vw;
+  box-shadow: 0 1vw 4vw rgba(0,0,0,0.1), 0 0 0 1px rgba(255,255,255,0.5);
+  border: 1px solid #f1f5f9;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-0.5vw) scale(1.02);
+  box-shadow: 0 2vw 6vw rgba(0,0,0,0.15);
+}
+
+.dashboard-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5vw;
+}
+
+.dashboard-card-indicator {
+  width: 1vw;
+  height: 1vw;
+  border-radius: 50%;
+  background-color: #046307;
+}
+
+.dashboard-card-status {
+  font-size: 0.8vw;
+  font-weight: 600;
+  padding: 0.4vw 1vw;
+  border-radius: 2vw;
+  background-color: #046307;
+  color: white;
+}
+
+.dashboard-card-title {
+  font-size: 1.5vw;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 1vw;
+}
+
+.dashboard-card-count {
+  font-size: 2.5vw;
+  font-weight: 700;
+  color: #046307;
+  margin-bottom: 0.5vw;
+}
+
+.dashboard-card-amount {
+  font-size: 1.5vw;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.dashboard-card-gradient {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 30%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(4, 99, 7, 0.05) 0%, rgba(4, 99, 7, 0.02) 100%);
+  pointer-events: none;
+}
+
+.dashboard-lock-button.locked {
+  background-color: #ef4444;
+}
+
+.dashboard-lock-button.unlocked {
+  background-color: #046307;
+}

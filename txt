@@ -93,5 +93,5 @@ VALUES
 
 
 
-the green : #046307
-bg white:  #f8fafc
+ #046307
+  #f8fafc
