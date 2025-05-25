@@ -1,10 +1,14 @@
 'use client'
 
 import React, { useState, useRef, useEffect } from 'react';
+import axios from 'axios';
 
 const DataTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [data] = useState([
+  const [areasList, setAreasList] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [customerData, setCustomerData] = useState([]);
+  const [data, setData] = useState([
     { id: 1, zone: 'North', area: 'Mumbai', submittedBy: 'John Doe', totalHissa: 25 },
     { id: 2, zone: 'South', area: 'Bangalore', submittedBy: 'Jane Smith', totalHissa: 18 },
     { id: 3, zone: 'East', area: 'Kolkata', submittedBy: 'Robert Johnson', totalHissa: 32 },
@@ -32,6 +36,7 @@ const DataTable = () => {
   const [formErrors, setFormErrors] = useState({});
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+  const [userViewDetail, setUserViewDetail] = useState([]);
   
   // Transaction logs storage - key is the row ID, value is the array of transactions
   const [allTransactionLogs, setAllTransactionLogs] = useState({});
@@ -51,6 +56,48 @@ const DataTable = () => {
     { animalCount: 2, shareCount: 7, name: 'Mohammed shakeel shaikh', purpose: 'Qurbani', status: 'SENT' },
     { animalCount: 2, shareCount: 7, name: 'Sayyed atique ur raham khaliqur Rahman', purpose: 'Qurbani', status: 'SENT' },
   ]);
+
+   // Fetch areas from API
+  const fetchAreas = async () => {
+    try {
+      const response = await axios.get('/api/areas');
+      setAreasList(response.data);
+    } catch (error) {
+      console.error('Error fetching areas:', error);
+      alert('Failed to fetch areas');
+    } finally {
+    }
+  };
+
+  // Fetch users from API
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get('/api/users');
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      alert('Failed to load users');
+    } finally {
+    }
+  };
+
+  // Fetch Customers Data
+  const fetchCustomerData = async () => {
+      const response = await axios.get('/api/customers?user_id=0');
+      setCustomerData(response.data);
+    };
+
+    useEffect(() => {
+      fetchAreas();
+      fetchCustomerData();
+      fetchUsers();
+      const interval = setInterval(() => {
+        fetchAreas();
+        fetchCustomerData();
+        fetchUsers();
+      }, 60000);
+      return () => clearInterval(interval);
+    }, []);
 
   // Helper function to round up to the nearest whole number
   const roundUp = (num) => {
@@ -96,10 +143,11 @@ const DataTable = () => {
   const derivedValues = calculateDerivedValues(selectedRowData, currentTransactionLog, howMuchPaying);
 
   // Handle opening eye modal
-  const handleEyeClick = (rowId, rowData) => {
+  const handleEyeClick = (rowId, rowData, item) => {
     setSelectedRowId(rowId);
     setSelectedRowData(rowData);
     setShowEyeModal(true);
+    setUserViewDetail(item)
   };
 
   // Handle opening receipt modal
@@ -233,7 +281,7 @@ const DataTable = () => {
     console.log('Exporting to Excel...');
   };
 
-  const filteredData = data.filter(item =>
+  const filteredData = users.filter(item =>
     Object.values(item).some(val =>
       String(val).toLowerCase().includes(searchTerm.toLowerCase())
     )
@@ -289,7 +337,7 @@ const DataTable = () => {
               <div style={{...styles.tableCell, ...styles.cellId, ...styles.headerCell}}>ID</div>
               <div style={{...styles.tableCell, ...styles.cellZone, ...styles.headerCell}}>ZONE</div>
               <div style={{...styles.tableCell, ...styles.cellArea, ...styles.headerCell}}>AREA</div>
-              <div style={{...styles.tableCell, ...styles.cellSubmitted, ...styles.headerCell}}>SUBMITTED BY</div>
+              <div style={{...styles.tableCell, ...styles.cellSubmitted, ...styles.headerCell}}>NIGRA</div>
               <div style={{...styles.tableCell, ...styles.cellHissa, ...styles.headerCell}}>TOTAL HISSA</div>
               <div style={{...styles.tableCell, ...styles.cellReceipt, ...styles.headerCell}}>RECEIPT</div>
               <div style={{...styles.tableCell, ...styles.cellActions, ...styles.headerCell}}>VIEW</div>
@@ -297,138 +345,184 @@ const DataTable = () => {
           </div>
 
           {/* Table Body */}
-          <div style={styles.tableBody}>
-            {filteredData.length > 0 ? (
-              filteredData.map((item) => {
-                // Get transaction log for this row
-                const rowTransactions = allTransactionLogs[item.id] || [];
-                // Calculate total shares paid for this row
-                const sharesPaid = rowTransactions.reduce((sum, t) => sum + t.shares, 0);
-                
-                return (
-                  <div 
-                    key={item.id} 
-                    style={styles.dataRow}
-                    className="data-row" // For hover effect
-                  >
-                    {/* ID */}
-                    <div style={{...styles.tableCell, ...styles.cellId}}>
-                      <span style={styles.idText}>{item.id}</span>
-                    </div>
-                    
-                    {/* Zone */}
-                    <div style={{...styles.tableCell, ...styles.cellZone}}>
-                      <span style={styles.zoneText}>{item.zone}</span>
-                    </div>
-                    
-                    {/* Area */}
-                    <div style={{...styles.tableCell, ...styles.cellArea}}>
-                      <span style={styles.areaText}>{item.area}</span>
-                    </div>
-                    
-                    {/* Submitted By */}
-                    <div style={{...styles.tableCell, ...styles.cellSubmitted}}>
-                      <span style={styles.submittedText}>{item.submittedBy}</span>
-                    </div>
-                    
-                    {/* Total Hissa */}
-                    <div style={{...styles.tableCell, ...styles.cellHissa}}>
-                      <div style={styles.hissaContainer}>
-                        <span style={styles.hissaBadge}>
-                          {sharesPaid > 0 ? `${sharesPaid}/${item.totalHissa}` : item.totalHissa}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    {/* Generate Receipt */}
-                    <div style={{...styles.tableCell, ...styles.cellReceipt}}>
-                      <button 
-                        style={{...styles.btn, ...styles.btnPrimary}}
-                        onClick={() => handleReceiptClick(item.id, item)}
-                      >
-                        <FileTextIcon style={styles.btnIcon} />
-                      </button>
-                    </div>
-                    
-                    {/* Actions */}
-                    <div style={{...styles.tableCell, ...styles.cellActions}}>
-                      <button 
-                        style={{...styles.btn, ...styles.btnSecondary}}
-                        onClick={() => handleEyeClick(item.id, item)}
-                      >
-                        <EyeIcon style={styles.btnIcon} />
-                      </button>
+         <div style={styles.tableBody}>
+          {filteredData.length > 0 ? (
+            filteredData.map((item, index) => {
+              // Filter customerData based on matching user_id
+              const userCustomerData = customerData.filter(customer => 
+                customer.user_id == item.user_id && customer.zone === "Out Of Mumbai" && customer.status === 1
+              );
+              // Calculate total hissa (count of filtered records)
+              const totalHissa = userCustomerData.length;
+              
+              // Calculate shares paid (count of records with payment_status: 1)
+              const sharesPaid = userCustomerData.filter(customer => customer.payment_status === 1).length;
+              
+              // Find the zone_name from areasList based on matching area_name
+              const matchedArea = areasList.find(area => area.area_name === item.area_name);
+              const zoneName = matchedArea ? matchedArea.zone_name : 'N/A';
+
+              return (
+                <div
+                  key={index}
+                  style={styles.dataRow}
+                  className="data-row" // For hover effect
+                >
+                  {/* ID */}
+                  <div style={{...styles.tableCell, ...styles.cellId}}>
+                    <span style={styles.idText}>{index + 1}</span>
+                  </div>
+
+                  {/* Zone */}
+                  <div style={{...styles.tableCell, ...styles.cellZone}}>
+                    <span style={styles.zoneText}>{zoneName}</span>
+                  </div>
+
+                  {/* Area */}
+                  <div style={{...styles.tableCell, ...styles.cellArea}}>
+                    <span style={styles.areaText}>{item.area_name}</span>
+                  </div>
+
+                  {/* Submitted By */}
+                  <div style={{...styles.tableCell, ...styles.cellSubmitted}}>
+                    <span style={styles.submittedText}>{item.username}</span>
+                  </div>
+
+                  {/* Total Hissa */}
+                  <div style={{...styles.tableCell, ...styles.cellHissa}}>
+                    <div style={styles.hissaContainer}>
+                      <span style={styles.hissaBadge}>
+                        {sharesPaid > 0 ? `${sharesPaid}/${totalHissa}` : totalHissa}
+                      </span>
                     </div>
                   </div>
-                );
-              })
-            ) : (
-              <div style={styles.emptyState}>
-                <div style={styles.emptyIcon}>
-                  <SearchIcon style={styles.emptyIconSvg} />
+
+                  {/* Generate Receipt */}
+                  <div style={{...styles.tableCell, ...styles.cellReceipt}}>
+                    <button
+                      style={{...styles.btn, ...styles.btnPrimary}}
+                      onClick={() => handleReceiptClick(item.id, item)}
+                    >
+                      <FileTextIcon style={styles.btnIcon} />
+                    </button>
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{...styles.tableCell, ...styles.cellActions}}>
+                    <button
+                      style={{...styles.btn, ...styles.btnSecondary}}
+                      onClick={() => handleEyeClick(item.id, userCustomerData, item)}
+                    >
+                      <EyeIcon style={styles.btnIcon} />
+                    </button>
+                  </div>
                 </div>
-                <h3 style={styles.emptyTitle}>No records found</h3>
-                <p style={styles.emptyText}>Try adjusting your search criteria.</p>
+              );
+            })
+          ) : (
+            <div style={styles.emptyState}>
+              <div style={styles.emptyIcon}>
+                <SearchIcon style={styles.emptyIconSvg} />
               </div>
-            )}
-          </div>
+              <h3 style={styles.emptyTitle}>No records found</h3>
+              <p style={styles.emptyText}>Try adjusting your search criteria.</p>
+            </div>
+          )}
+        </div>
         </div>
       </div>
       
       {/* Eye Modal */}
       {showEyeModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <div style={styles.modalHeader}>
-              <h2 style={styles.modalTitle}>View Record Details - ID: {selectedRowId}</h2>
-              <button style={styles.closeButton} onClick={closeEyeModal}>×</button>
+      <div style={styles.modalOverlay}>
+        <div style={styles.modalContent}>
+          <div style={styles.modalHeader}>
+            <h2 style={styles.modalTitle}>View Record Details :</h2>
+            <button style={styles.closeButton} onClick={closeEyeModal}>×</button>
+          </div>
+          <div style={styles.modalBody}>
+            <div style={styles.recordDetails}>
+              <div style={styles.recordItem}>
+                <span style={styles.recordLabel}>Zone:</span>
+                <span style={styles.recordValue}>{
+                  (() => {
+                    const matchedArea = areasList.find(area => area.area_name === userViewDetail?.area_name);
+                    return matchedArea ? matchedArea.zone_name : 'N/A';
+                  })()
+                }</span>
+              </div>
+              <div style={styles.recordItem}>
+                <span style={styles.recordLabel}>Area:</span>
+                <span style={styles.recordValue}>{userViewDetail?.area_name || 'N/A'}</span>
+              </div>
+              <div style={styles.recordItem}>
+                <span style={styles.recordLabel}>Area Incharge:</span>
+                <span style={styles.recordValue}>{
+                  (() => {
+                    const matchedArea = areasList.find(area => area.area_name === userViewDetail?.area_name);
+                    return matchedArea ? matchedArea.area_incharge : 'N/A';
+                  })()
+                }</span>
+              </div>
+              <div style={styles.recordItem}>
+                <span style={styles.recordLabel}>Incharge:</span>
+                <span style={styles.recordValue}>{userViewDetail?.username || 'N/A'}</span>
+              </div>
+              <div style={styles.recordItem}>
+                <span style={styles.recordLabel}>Contact Number:</span>
+                <span style={styles.recordValue}>{userViewDetail?.phone || 'N/A'}</span>
+              </div>
+              <div style={styles.recordItem}>
+                <span style={styles.recordLabel}>Email:</span>
+                <span style={styles.recordValue}>{userViewDetail?.email || 'N/A'}</span>
+              </div>
+              <div style={styles.recordItem}>
+                <span style={styles.recordLabel}>Total Share Count:</span>
+                <span style={styles.recordValue}>{selectedRowData?.length || 0} Share(s)</span>
+              </div>
+              <div style={styles.recordItem}>
+                <span style={styles.recordLabel}>Total Animal Count:</span>
+                <span style={styles.recordValue}>{Math.floor((selectedRowData?.length || 0) / 7)} Animal(s)</span>
+              </div>
             </div>
-            <div style={styles.modalBody}>
-              <div style={styles.recordDetails}>
-                <div style={styles.recordItem}>
-                  <span style={styles.recordLabel}>Zone:</span>
-                  <span style={styles.recordValue}>{selectedRowData?.zone || 'QUBA ZONE'}</span>
-                </div>
-                <div style={styles.recordItem}>
-                  <span style={styles.recordLabel}>Area:</span>
-                  <span style={styles.recordValue}>{selectedRowData?.area || 'Kurla East'}</span>
-                </div>
-                <div style={styles.recordItem}>
-                  <span style={styles.recordLabel}>Contact Number:</span>
-                  <span style={styles.recordValue}>9821245634</span>
-                </div>
-                <div style={styles.recordItem}>
-                  <span style={styles.recordLabel}>Total Share Count:</span>
-                  <span style={styles.recordValue}>{selectedRowData?.totalHissa || 67} Share(s)</span>
+            
+            <div style={styles.recordTable}>
+              <div style={styles.recordTableHeader}>
+                <div style={styles.recordTableRow}>
+                  <div style={styles.recordTableCell}>Share Count</div>
+                  <div style={styles.recordTableCell}>Receipt ID</div>
+                  <div style={styles.recordTableCell}>Name</div>
+                  <div style={styles.recordTableCell}>Purpose</div>
+                  <div style={styles.recordTableCell}>Status</div>
                 </div>
               </div>
-              
-              <div style={styles.recordTable}>
-                <div style={styles.recordTableHeader}>
-                  <div style={styles.recordTableRow}>
-                    <div style={styles.recordTableCell}>Animal Count</div>
-                    <div style={styles.recordTableCell}>Share Count</div>
-                    <div style={styles.recordTableCell}>Name</div>
-                    <div style={styles.recordTableCell}>Purpose(Qurbani/Aqeeqa)</div>
-                    <div style={styles.recordTableCell}>Status</div>
-                  </div>
-                </div>
-                <div style={styles.recordTableBody}>
-                  {recordsData.map((record, index) => (
-                    <div key={index} style={styles.recordTableRow}>
-                      <div style={styles.recordTableCell}>{record.animalCount}</div>
-                      <div style={styles.recordTableCell}>{record.shareCount}</div>
-                      <div style={styles.recordTableCell}>{record.name}</div>
-                      <div style={styles.recordTableCell}>{record.purpose}</div>
-                      <div style={styles.recordTableCell}>{record.status}</div>
+              <div style={styles.recordTableBody}>
+                {selectedRowData && selectedRowData.map((record, index) => (
+                  <div key={index} style={styles.recordTableRow}>
+                    <div style={styles.recordTableCell}>{index + 1}</div>
+                    <div style={styles.recordTableCell}>{record.recipt || 'N/A'}</div>
+                    <div style={styles.recordTableCell}>{record.name}</div>
+                    <div style={styles.recordTableCell}>{record.type}</div>
+                    <div style={styles.recordTableCell}>
+                      <span style={{
+                        padding: '0.2vw 0.5vw',
+                        borderRadius: '0.3vw',
+                        fontSize: '0.9vw',
+                        fontWeight: 600,
+                        backgroundColor: record.payment_status === 1 ? '#dcfce7' : '#fef2f2',
+                        color: record.payment_status === 1 ? '#166534' : '#dc2626'
+                      }}>
+                        {record.payment_status === 1 ? 'Paid' : 'Unpaid'}
+                      </span>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
-      )}
+      </div>
+    )}
       
       {/* Receipt Modal */}
       {showReceiptModal && (
@@ -826,7 +920,7 @@ const styles = {
     height: "100%"
   },
   header: {
-    background: 'linear-gradient(to right, #046307, #057309)',
+    background: '#046307',
     padding: '1.5vw 3vw',
     color: '#f8fafc',
   },
@@ -916,7 +1010,7 @@ const styles = {
   },
   tableRow: {
     display: 'grid',
-    gridTemplateColumns: '0.5fr 1fr 1fr 1.5fr 1fr 0.5fr 0.5fr',
+    gridTemplateColumns: '0.5fr 1fr 1.5fr 1.5fr 1fr 0.5fr 0.5fr',
     gap: '1vw',
     padding: '0 2vw',
   },
@@ -940,7 +1034,7 @@ const styles = {
   },
   dataRow: {
     display: 'grid',
-    gridTemplateColumns: '0.5fr 1fr 1fr 1.5fr 1fr 0.5fr 0.5fr',
+    gridTemplateColumns: '0.5fr 1fr 1.5fr 1.5fr 1fr 0.5fr 0.5fr',
     gap: '1vw',
     padding: '1vw 2vw',
     borderBottom: '1px solid #e2e8f0',
@@ -1160,6 +1254,7 @@ const styles = {
     fontSize: '1vw',
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center'
   },
   recordTableBody: {
     maxHeight: '50vh',

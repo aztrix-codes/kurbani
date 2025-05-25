@@ -206,7 +206,7 @@ const styles = {
     height: "100%"
   },
   header: {
-    background: 'linear-gradient(to right, #046307, #057309)',
+    background: '#046307',
     padding: '1.5vw 3vw',
     color: '#f8fafc',
   },

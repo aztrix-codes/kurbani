@@ -52,7 +52,6 @@ const Dashboard = () => {
   useEffect(() => {
     fetchAllData();
     
-    // Set up auto-refresh every 60 seconds
     const interval = setInterval(fetchAllData, 60000);
     return () => clearInterval(interval);
   }, []);
