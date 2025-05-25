@@ -13,20 +13,21 @@ const Dashboard = () => {
   }); 
   const [customerData, setCustomerData] = useState([]);
   const [dashboardData, setDashboardData] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [combinedTotals, setCombinedTotals] = useState({
+    total: 0,
+    paid: 0,
+    pending: 0
+  });
 
   // Fetch all data
   const fetchAllData = async () => {
     try {
-      // setIsLoading(true);
       await fetchAdminData();
       await fetchCustomerData();
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Error fetching data:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -64,8 +65,14 @@ const Dashboard = () => {
   }, [customerData, adminData]);
 
   const calculateDashboardData = () => {
-    const outOfMumbai = customerData.filter(c => c.zone === 'Out Of Mumbai');
-    const mumbai = customerData.filter(c => c.zone === 'Mumbai' || c.zone === 'In Mumbai');
+    const outOfMumbai = customerData.filter(c => 
+      c.zone.toLowerCase().includes('out of mumbai') || 
+      c.zone.toLowerCase() === 'outofmumbai'
+    );
+    const mumbai = customerData.filter(c => 
+      c.zone.toLowerCase().includes('mumbai') && 
+      !c.zone.toLowerCase().includes('out of')
+    );
     
     const calculateMetrics = (customers, costPerShare) => {
       const totalShares = customers.length;
@@ -89,6 +96,13 @@ const Dashboard = () => {
 
     const oom = calculateMetrics(outOfMumbai, adminData.oom_a_cost);
     const mum = calculateMetrics(mumbai, adminData.m_a_cost);
+
+    // Calculate combined totals for the header only
+    setCombinedTotals({
+      total: oom.totalAmount + mum.totalAmount,
+      paid: oom.paidAmount + mum.paidAmount,
+      pending: oom.pendingAmount + mum.pendingAmount
+    });
 
     setDashboardData([
       { title: 'Animals (Out of Mumbai)', count: oom.totalAnimals, amt: '' },
@@ -118,19 +132,11 @@ const Dashboard = () => {
     });
   };
 
-  if (isLoading) {
-    return <div className="dashboard-loading">Loading dashboard data...</div>;
-  }
-
   return (
     <div className="dashboard-container">
       <div className="dashboard-header">
         <div className="dashboard-header-left">
           <h1 className="dashboard-title">Dashboard</h1>
-          <div className="cost-info">
-            <span>Mumbai: ₹{adminData.m_a_cost.toLocaleString()}</span>
-            <span>Out of Mumbai: ₹{adminData.oom_a_cost.toLocaleString()}</span>
-          </div>
         </div>
         
         <div className="dashboard-header-right">
@@ -152,6 +158,14 @@ const Dashboard = () => {
           </button>
         </div>
       </div>
+
+          <div className="cost-info">
+            <span>Mumbai: ₹{adminData.m_a_cost.toLocaleString()}</span>
+            <span>Out of Mumbai: ₹{adminData.oom_a_cost.toLocaleString()}</span>
+            <span>Total: {formatCurrency(combinedTotals.total)}</span>
+            <span>Paid: {formatCurrency(combinedTotals.paid)}</span>
+            <span>Pending: {formatCurrency(combinedTotals.pending)}</span>
+          </div>
 
       <div className="dashboard-cards-container">
         <div className="dashboard-cards-grid">
