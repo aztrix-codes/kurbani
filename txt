@@ -65,28 +65,34 @@ CREATE TABLE user_feedback (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 );
 
+CREATE TABLE receipt_record (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    zone VARCHAR(50) NOT NULL,
+    area VARCHAR(50) NOT NULL,
+    purpose VARCHAR(255) NOT NULL,
+    paid_by VARCHAR(100) NOT NULL,
+    received_by VARCHAR(100) NOT NULL,
+    subtotal DECIMAL(12,2) NOT NULL,
+    net_total DECIMAL(12,2) NOT NULL,
+    rate DECIMAL(10,2) NOT NULL,
+    quantity DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE superadmin (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    m_a_cost DECIMAL(10,2),
+    oom_a_cost DECIMAL(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
 
 
 
-INSERT INTO zones (zone_name, zone_incharge, phone, email)
-VALUES 
-('North Zone', 'Alice Johnson', '9876543210', 'alice.north@example.com'),
-('South Zone', 'Bob Smith', '8765432109', 'bob.south@example.com'),
-('East Zone', 'Carol White', '7654321098', 'carol.east@example.com');
 
-INSERT INTO areas (area_name, area_incharge, phone, email, zone_name)
-VALUES 
-('North Area 1', 'David Miller', '9988776655', 'david.north1@example.com', 'North Zone'),
-('North Area 2', 'Eve Turner', '8877665544', 'eve.north2@example.com', 'North Zone'),
-('South Area 1', 'Frank Harris', '7766554433', 'frank.south1@example.com', 'South Zone'),
-('East Area 1', 'Grace Lee', '6655443322', 'grace.east1@example.com', 'East Zone');
-
-INSERT INTO users (username, phone, email, password, area_name, img_url)
-VALUES 
-('john_doe', '9123456780', 'john@example.com', 'hashed_password_1', 'North Area 1', 'https://example.com/img/john.jpg'),
-('jane_doe', '9234567890', 'jane@example.com', 'hashed_password_2', 'North Area 2', 'https://example.com/img/jane.jpg'),
-('sam_smith', '9345678901', 'sam@example.com', 'hashed_password_3', 'South Area 1', 'https://example.com/img/sam.jpg'),
-('lisa_brown', '9456789012', 'lisa@example.com', 'hashed_password_4', 'East Area 1', 'https://example.com/img/lisa.jpg');
 
 
 
