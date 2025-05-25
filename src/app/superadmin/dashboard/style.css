@@ -1,9 +1,11 @@
+/* Base Container */
 .dashboard-container {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Header Styles */
 .dashboard-header {
   display: flex;
   justify-content: space-between;
@@ -18,6 +20,12 @@
   min-width: 300px;
 }
 
+.dashboard-header-right {
+  display: flex;
+  align-items: center;
+  gap: 1vw;
+}
+
 .dashboard-title {
   font-size: 3vw;
   font-weight: 600;
@@ -25,35 +33,99 @@
   margin: 0 0 0.5vw 0;
 }
 
-.dashboard-subtitle {
-  font-size: 1.5vw;
-  color: #6b7280;
-  margin: 0;
+.cost-info {
+  display: flex;
+  gap: 1.5vw;
+  font-size: 1vw;
+  color: #4b5563;
 }
 
-.dashboard-lock-button {
+.cost-info span {
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.5vw 1vw;
+  border-radius: 0.5vw;
+}
+
+/* Button Styles */
+/* Lock Button Styles */
+.lock-button {
   display: flex;
   align-items: center;
-  gap: 1vw;
-  padding: 1vw 0;
-  border-radius: 5vw;
-  font-size: 1.2vw;
+  justify-content: center;
+  gap: .5vw;
+  padding: 0.8vw 1.5vw;
+  border-radius: 100px;
+  font-size: 1vw;
   font-weight: 600;
   border: none;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0.8vw 2.5vw rgba(0,0,0,0.15);
+  transition: all 0.3s ease;
   color: white;
-  letter-spacing: 0.1vw;
-  width: 10vw;
-  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+  overflow: hidden;
+  width: 8vw;
 }
 
-.dashboard-lock-button:hover {
-  transform: scale(1.05);
-  box-shadow: 0 1.2vw 3vw rgba(0,0,0,0.2);
+.lock-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
 }
 
+.lock-button:active {
+  transform: translateY(0);
+}
+
+.lock-button svg {
+  transition: transform 0.3s ease;
+}
+
+.lock-button:hover svg {
+  transform: scale(1.1);
+}
+
+/* Locked State */
+.lock-button.locked {
+  background-color: #e74c3c;
+  background-image: linear-gradient(to bottom, #e74c3c, #c0392b);
+}
+
+/* Unlocked State */
+.lock-button.unlocked {
+  background-color: #2ecc71;
+  background-image: linear-gradient(to bottom, #2ecc71, #27ae60);
+}
+
+.refresh-button {
+  display: flex;
+  align-items: center;
+  gap: 0.8vw;
+  padding: 0.8vw 1.5vw;
+  background: #ffffff;
+  border: none;
+  border-radius: 5vw;
+  cursor: pointer;
+  font-size: 1vw;
+  font-weight: 500;
+  color: #046307;
+  transition: all 0.3s ease;
+  box-shadow: 0 0.5vw 1.5vw rgba(0,0,0,0.1);
+}
+
+.refresh-button:hover {
+  background: #f0f7f0;
+  transform: scale(1.03);
+}
+
+.refresh-button svg {
+  transition: transform 0.5s ease;
+}
+
+.refresh-button:hover svg {
+  transform: rotate(180deg);
+}
+
+/* Cards Container */
 .dashboard-cards-container {
   padding: 0 2vw 2vw 2vw;
 }
@@ -66,6 +138,7 @@
   margin: 0 auto;
 }
 
+/* Individual Cards */
 .dashboard-card {
   background-color: white;
   border-radius: 1.5vw;
@@ -112,6 +185,8 @@
   font-weight: 600;
   color: #374151;
   margin-bottom: 1vw;
+  width: 10vw;
+  height: 5vw;
 }
 
 .dashboard-card-count {
@@ -137,10 +212,13 @@
   pointer-events: none;
 }
 
-.dashboard-lock-button.locked {
-  background-color: #c13636;
-}
-
-.dashboard-lock-button.unlocked {
-  background-color: #046307;
+/* Loading State */
+.dashboard-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-size: 1.5vw;
+  color: #4b5563;
+  background: rgba(255, 255, 255, 0.8);
 }

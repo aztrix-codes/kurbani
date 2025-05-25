@@ -11,10 +11,18 @@ export async function GET(request) {
       });
     }
 
-    const [rows] = await pool.query(
-      'SELECT * FROM customers WHERE user_id = ?',
-      [user_id]
-    );
+    let query, params;
+    
+    // If user_id is 0, get all customers
+    if (user_id === '0') {
+      query = 'SELECT * FROM customers';
+      params = [];
+    } else {
+      query = 'SELECT * FROM customers WHERE user_id = ?';
+      params = [user_id];
+    }
+
+    const [rows] = await pool.query(query, params);
 
     return new Response(JSON.stringify(rows), {
       headers: { 'Content-Type': 'application/json' },
