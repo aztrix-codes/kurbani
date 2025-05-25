@@ -10,12 +10,12 @@ export default function AdminLayout({ children }) {
 
   const links = [
     {title: "Home", path: 'dashboard'},
-    {title: "Generate Receipt (Mumbai)", path: 'receipt-mumbai'},
-    {title: "Generate Receipt (Out of Mumbai)", path: 'receipt-oom'},
-     {title: "Export Excel (Mumbai)", path: 'export-excel-mumbai'},
-    {title: "Export Excel (Out of Mumbai)", path: 'export-excel-oom'},
-    {title: "Payment Status (Mumbai)", path: 'payment-status-mumbai'},
-    {title: "Payment Status (Out of Mumbai)", path: 'payment-status-oom'},
+    {title: "Generate Receipt - Mumbai", path: 'receipt-mumbai'},
+    {title: "Generate Receipt - Out of Mumbai", path: 'receipt-oom'},
+     {title: "Export Excel - Mumbai", path: 'export-excel-mumbai'},
+    {title: "Export Excel - Out of Mumbai", path: 'export-excel-oom'},
+    {title: "Payment Status - Mumbai", path: 'payment-status-mumbai'},
+    {title: "Payment Status - Out of Mumbai", path: 'payment-status-oom'},
   ]
 
 

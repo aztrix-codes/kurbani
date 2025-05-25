@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 
 const DataTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +16,218 @@ const DataTable = () => {
     { id: 9, zone: 'West', area: 'Jaipur', submittedBy: 'Daniel Clark', totalHissa: 29 },
     { id: 10, zone: 'Central', area: 'Lucknow', submittedBy: 'Lisa Walker', totalHissa: 21 },
   ]);
+
+  // Modal states
+  const [showEyeModal, setShowEyeModal] = useState(false);
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [selectedRowId, setSelectedRowId] = useState(null);
+  const [selectedRowData, setSelectedRowData] = useState(null);
+  
+  // Receipt form states
+  const [amountPerShare, setAmountPerShare] = useState(4300);
+  const [howMuchPaying, setHowMuchPaying] = useState(0);
+  const [paidBy, setPaidBy] = useState('');
+  const [collectedBy, setCollectedBy] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [formErrors, setFormErrors] = useState({});
+  const fileInputRef = useRef(null);
+  const cameraInputRef = useRef(null);
+  
+  // Transaction logs storage - key is the row ID, value is the array of transactions
+  const [allTransactionLogs, setAllTransactionLogs] = useState({});
+  
+  // Current transaction log for the selected row
+  const [currentTransactionLog, setCurrentTransactionLog] = useState([]);
+  
+  // Dummy data for eye modal
+  const [recordsData] = useState([
+    { animalCount: 1, shareCount: 7, name: 'Shehna Khan', purpose: 'Qurbani', status: 'SENT' },
+    { animalCount: 1, shareCount: 7, name: 'Mehrunnisha Hamid pathan', purpose: 'Qurbani', status: 'SENT' },
+    { animalCount: 1, shareCount: 7, name: 'Rukhsana murtuza momin', purpose: 'Qurbani', status: 'SENT' },
+    { animalCount: 1, shareCount: 7, name: 'Irshad jahan shaikh', purpose: 'Qurbani', status: 'SENT' },
+    { animalCount: 1, shareCount: 7, name: 'Ashmat bee mehmood shaikh', purpose: 'Qurbani', status: 'SENT' },
+    { animalCount: 1, shareCount: 7, name: 'Parveen Abdul gafur khan', purpose: 'Qurbani', status: 'SENT' },
+    { animalCount: 1, shareCount: 7, name: 'Fatima Abdul fakir', purpose: 'Qurbani', status: 'SENT' },
+    { animalCount: 2, shareCount: 7, name: 'Mohammed shakeel shaikh', purpose: 'Qurbani', status: 'SENT' },
+    { animalCount: 2, shareCount: 7, name: 'Sayyed atique ur raham khaliqur Rahman', purpose: 'Qurbani', status: 'SENT' },
+  ]);
+
+  // Helper function to round up to the nearest whole number
+  const roundUp = (num) => {
+    return Math.ceil(num);
+  };
+
+  // Calculate derived values for receipt form
+  const calculateDerivedValues = (rowData, transactions, currentPayingShares) => {
+    if (!rowData) return { totalShares: 0, totalSharesPaid: 0, pendingShares: 0, totalAmount: 0, totalCollectedAmount: 0, currentPaidAmount: 0, balance: 0 };
+    
+    const totalShares = rowData.totalHissa;
+    
+    // Calculate total shares paid from transaction log
+    const totalSharesPaid = transactions.reduce((sum, transaction) => sum + transaction.shares, 0);
+    
+    // Calculate pending shares after current payment
+    const pendingShares = Math.max(0, totalShares - totalSharesPaid - currentPayingShares);
+    
+    // Calculate total amount (rounded up)
+    const totalAmount = roundUp(totalShares * amountPerShare);
+    
+    // Calculate paid amount for current transaction (rounded up)
+    const currentPaidAmount = roundUp(currentPayingShares * amountPerShare);
+    
+    // Calculate total amount collected so far (rounded up)
+    const totalCollectedAmount = transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
+    
+    // Calculate balance (remaining amount to be collected) after current payment
+    const balance = Math.max(0, totalAmount - totalCollectedAmount - currentPaidAmount);
+    
+    return {
+      totalShares,
+      totalSharesPaid,
+      pendingShares,
+      totalAmount,
+      totalCollectedAmount,
+      currentPaidAmount,
+      balance
+    };
+  };
+
+  // Get the derived values for the current state
+  const derivedValues = calculateDerivedValues(selectedRowData, currentTransactionLog, howMuchPaying);
+
+  // Handle opening eye modal
+  const handleEyeClick = (rowId, rowData) => {
+    setSelectedRowId(rowId);
+    setSelectedRowData(rowData);
+    setShowEyeModal(true);
+  };
+
+  // Handle opening receipt modal
+  const handleReceiptClick = (rowId, rowData) => {
+    setSelectedRowId(rowId);
+    setSelectedRowData(rowData);
+    
+    // Get existing transactions for this row or initialize empty array
+    const existingTransactions = allTransactionLogs[rowId] || [];
+    setCurrentTransactionLog(existingTransactions);
+    
+    // Reset form values
+    setHowMuchPaying(0);
+    setPaidBy('');
+    setCollectedBy('');
+    setSelectedImage(null);
+    setFormErrors({});
+    
+    setShowReceiptModal(true);
+  };
+
+  // Handle closing modals
+  const closeEyeModal = () => {
+    setShowEyeModal(false);
+    setSelectedRowId(null);
+    setSelectedRowData(null);
+  };
+
+  const closeReceiptModal = () => {
+    setShowReceiptModal(false);
+    setSelectedRowId(null);
+    setSelectedRowData(null);
+    setCurrentTransactionLog([]);
+    setFormErrors({});
+  };
+
+  // Handle image selection from file
+  const handleImageSelect = (e) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setSelectedImage(e.target.result);
+        setFormErrors({...formErrors, image: null});
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Handle camera capture
+  const handleCameraCapture = () => {
+    if (cameraInputRef.current) {
+      cameraInputRef.current.click();
+    }
+  };
+
+  // Handle file upload
+  const handleFileUpload = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Validate form
+  const validateForm = () => {
+    const errors = {};
+    
+    if (howMuchPaying <= 0) {
+      errors.howMuchPaying = "Please enter a valid number of shares to pay for";
+    }
+    
+    if (!paidBy.trim()) {
+      errors.paidBy = "Paid by is required";
+    }
+    
+    if (!collectedBy.trim()) {
+      errors.collectedBy = "Collected by is required";
+    }
+    
+    if (!selectedImage) {
+      errors.image = "Image is required";
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  // Handle form submission
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    // Calculate the amount with rounding up
+    const amount = roundUp(howMuchPaying * amountPerShare);
+    
+    // Add new transaction to log
+    const newTransaction = {
+      date: new Date().toLocaleDateString('en-GB'),
+      shares: howMuchPaying,
+      amount: amount,
+      paidBy: paidBy,
+      collectedBy: collectedBy,
+      image: selectedImage
+    };
+    
+    // Update current transaction log
+    const updatedTransactionLog = [...currentTransactionLog, newTransaction];
+    setCurrentTransactionLog(updatedTransactionLog);
+    
+    // Update all transaction logs
+    setAllTransactionLogs({
+      ...allTransactionLogs,
+      [selectedRowId]: updatedTransactionLog
+    });
+    
+    // Reset form
+    setHowMuchPaying(0);
+    setPaidBy('');
+    setCollectedBy('');
+    setSelectedImage(null);
+    setFormErrors({});
+    
+    // Show success message
+    alert(`Payment of ${amount} INR for ${howMuchPaying} shares recorded successfully!`);
+  };
 
   const exportToExcel = () => {
     console.log('Exporting to Excel...');
@@ -34,7 +246,7 @@ const DataTable = () => {
         <div style={styles.header}>
           <div style={styles.headerContent}>
             <div style={styles.headerTitle}>
-              <h1 style={styles.h1}>Data Records - Out of Mumbai</h1>
+              <h1 style={styles.h1}>Generate Receipt - Out of Mumbai</h1>
             </div>
             
             <div style={styles.headerActions}>
@@ -87,54 +299,69 @@ const DataTable = () => {
           {/* Table Body */}
           <div style={styles.tableBody}>
             {filteredData.length > 0 ? (
-              filteredData.map((item) => (
-                <div 
-                  key={item.id} 
-                  style={styles.dataRow}
-                  className="data-row" // For hover effect
-                >
-                  {/* ID */}
-                  <div style={{...styles.tableCell, ...styles.cellId}}>
-                    <span style={styles.idText}>{item.id}</span>
+              filteredData.map((item) => {
+                // Get transaction log for this row
+                const rowTransactions = allTransactionLogs[item.id] || [];
+                // Calculate total shares paid for this row
+                const sharesPaid = rowTransactions.reduce((sum, t) => sum + t.shares, 0);
+                
+                return (
+                  <div 
+                    key={item.id} 
+                    style={styles.dataRow}
+                    className="data-row" // For hover effect
+                  >
+                    {/* ID */}
+                    <div style={{...styles.tableCell, ...styles.cellId}}>
+                      <span style={styles.idText}>{item.id}</span>
+                    </div>
+                    
+                    {/* Zone */}
+                    <div style={{...styles.tableCell, ...styles.cellZone}}>
+                      <span style={styles.zoneText}>{item.zone}</span>
+                    </div>
+                    
+                    {/* Area */}
+                    <div style={{...styles.tableCell, ...styles.cellArea}}>
+                      <span style={styles.areaText}>{item.area}</span>
+                    </div>
+                    
+                    {/* Submitted By */}
+                    <div style={{...styles.tableCell, ...styles.cellSubmitted}}>
+                      <span style={styles.submittedText}>{item.submittedBy}</span>
+                    </div>
+                    
+                    {/* Total Hissa */}
+                    <div style={{...styles.tableCell, ...styles.cellHissa}}>
+                      <div style={styles.hissaContainer}>
+                        <span style={styles.hissaBadge}>
+                          {sharesPaid > 0 ? `${sharesPaid}/${item.totalHissa}` : item.totalHissa}
+                        </span>
+                      </div>
+                    </div>
+                    
+                    {/* Generate Receipt */}
+                    <div style={{...styles.tableCell, ...styles.cellReceipt}}>
+                      <button 
+                        style={{...styles.btn, ...styles.btnPrimary}}
+                        onClick={() => handleReceiptClick(item.id, item)}
+                      >
+                        <FileTextIcon style={styles.btnIcon} />
+                      </button>
+                    </div>
+                    
+                    {/* Actions */}
+                    <div style={{...styles.tableCell, ...styles.cellActions}}>
+                      <button 
+                        style={{...styles.btn, ...styles.btnSecondary}}
+                        onClick={() => handleEyeClick(item.id, item)}
+                      >
+                        <EyeIcon style={styles.btnIcon} />
+                      </button>
+                    </div>
                   </div>
-                  
-                  {/* Zone */}
-                  <div style={{...styles.tableCell, ...styles.cellZone}}>
-                    <span style={styles.zoneText}>{item.zone}</span>
-                  </div>
-                  
-                  {/* Area */}
-                  <div style={{...styles.tableCell, ...styles.cellArea}}>
-                    <span style={styles.areaText}>{item.area}</span>
-                  </div>
-                  
-                  {/* Submitted By */}
-                  <div style={{...styles.tableCell, ...styles.cellSubmitted}}>
-                    <span style={styles.submittedText}>{item.submittedBy}</span>
-                  </div>
-                  
-                  {/* Total Hissa */}
-                  <div style={{...styles.tableCell, ...styles.cellHissa}}>
-                    <span style={styles.hissaBadge}>
-                      {item.totalHissa}
-                    </span>
-                  </div>
-                  
-                  {/* Generate Receipt */}
-                  <div style={{...styles.tableCell, ...styles.cellReceipt}}>
-                    <button style={{...styles.btn, ...styles.btnPrimary}}>
-                      <FileTextIcon style={styles.btnIcon} />
-                    </button>
-                  </div>
-                  
-                  {/* Actions */}
-                  <div style={{...styles.tableCell, ...styles.cellActions}}>
-                    <button style={{...styles.btn, ...styles.btnSecondary}}>
-                      <EyeIcon style={styles.btnIcon} />
-                    </button>
-                  </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <div style={styles.emptyState}>
                 <div style={styles.emptyIcon}>
@@ -147,6 +374,349 @@ const DataTable = () => {
           </div>
         </div>
       </div>
+      
+      {/* Eye Modal */}
+      {showEyeModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <h2 style={styles.modalTitle}>View Record Details - ID: {selectedRowId}</h2>
+              <button style={styles.closeButton} onClick={closeEyeModal}>×</button>
+            </div>
+            <div style={styles.modalBody}>
+              <div style={styles.recordDetails}>
+                <div style={styles.recordItem}>
+                  <span style={styles.recordLabel}>Zone:</span>
+                  <span style={styles.recordValue}>{selectedRowData?.zone || 'QUBA ZONE'}</span>
+                </div>
+                <div style={styles.recordItem}>
+                  <span style={styles.recordLabel}>Area:</span>
+                  <span style={styles.recordValue}>{selectedRowData?.area || 'Kurla East'}</span>
+                </div>
+                <div style={styles.recordItem}>
+                  <span style={styles.recordLabel}>Contact Number:</span>
+                  <span style={styles.recordValue}>9821245634</span>
+                </div>
+                <div style={styles.recordItem}>
+                  <span style={styles.recordLabel}>Total Share Count:</span>
+                  <span style={styles.recordValue}>{selectedRowData?.totalHissa || 67} Share(s)</span>
+                </div>
+              </div>
+              
+              <div style={styles.recordTable}>
+                <div style={styles.recordTableHeader}>
+                  <div style={styles.recordTableRow}>
+                    <div style={styles.recordTableCell}>Animal Count</div>
+                    <div style={styles.recordTableCell}>Share Count</div>
+                    <div style={styles.recordTableCell}>Name</div>
+                    <div style={styles.recordTableCell}>Purpose(Qurbani/Aqeeqa)</div>
+                    <div style={styles.recordTableCell}>Status</div>
+                  </div>
+                </div>
+                <div style={styles.recordTableBody}>
+                  {recordsData.map((record, index) => (
+                    <div key={index} style={styles.recordTableRow}>
+                      <div style={styles.recordTableCell}>{record.animalCount}</div>
+                      <div style={styles.recordTableCell}>{record.shareCount}</div>
+                      <div style={styles.recordTableCell}>{record.name}</div>
+                      <div style={styles.recordTableCell}>{record.purpose}</div>
+                      <div style={styles.recordTableCell}>{record.status}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Receipt Modal */}
+      {showReceiptModal && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <div style={styles.modalHeader}>
+              <h2 style={styles.modalTitle}>Generate Receipt - ID: {selectedRowId}</h2>
+              <button style={styles.closeButton} onClick={closeReceiptModal}>×</button>
+            </div>
+            <div style={styles.modalBody}>
+              {/* Share Status Summary */}
+              <div style={styles.shareStatusContainer}>
+                <div style={styles.shareStatusHeader}>Share Status</div>
+                <div style={styles.shareStatusGrid}>
+                  <div style={styles.shareStatusItem}>
+                    <div style={styles.shareStatusLabel}>Total Shares</div>
+                    <div style={styles.shareStatusValue}>{derivedValues.totalShares}</div>
+                  </div>
+                  <div style={styles.shareStatusItem}>
+                    <div style={styles.shareStatusLabel}>Shares Paid</div>
+                    <div style={styles.shareStatusValue}>{derivedValues.totalSharesPaid}</div>
+                  </div>
+                  <div style={styles.shareStatusItem}>
+                    <div style={styles.shareStatusLabel}>Current Payment</div>
+                    <div style={styles.shareStatusValue}>{howMuchPaying}</div>
+                  </div>
+                  <div style={styles.shareStatusItem}>
+                    <div style={styles.shareStatusLabel}>Pending Shares</div>
+                    <div style={styles.shareStatusValue}>{derivedValues.pendingShares}</div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Financial Summary */}
+              <div style={styles.financialSummaryContainer}>
+                <div style={styles.financialSummaryHeader}>Financial Summary</div>
+                <div style={styles.financialSummaryGrid}>
+                  <div style={styles.financialSummaryItem}>
+                    <div style={styles.financialSummaryLabel}>Total Amount (INR)</div>
+                    <div style={styles.financialSummaryValue}>{derivedValues.totalAmount}</div>
+                  </div>
+                  <div style={styles.financialSummaryItem}>
+                    <div style={styles.financialSummaryLabel}>Amount Collected (INR)</div>
+                    <div style={styles.financialSummaryValue}>{derivedValues.totalCollectedAmount}</div>
+                  </div>
+                  <div style={styles.financialSummaryItem}>
+                    <div style={styles.financialSummaryLabel}>Current Payment (INR)</div>
+                    <div style={styles.financialSummaryValue}>{derivedValues.currentPaidAmount}</div>
+                  </div>
+                  <div style={styles.financialSummaryItem}>
+                    <div style={styles.financialSummaryLabel}>Balance (INR)</div>
+                    <div style={styles.financialSummaryValue}>{derivedValues.balance}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <form onSubmit={handleFormSubmit} style={styles.receiptForm}>
+                <div style={styles.formGrid}>
+                  <div style={styles.formGroup}>
+                    <label style={styles.formLabel}>TOTAL SHARES</label>
+                    <input 
+                      type="text" 
+                      value={derivedValues.totalShares} 
+                      readOnly 
+                      style={styles.formInput} 
+                    />
+                  </div>
+                  
+                  <div style={styles.formGroup}>
+                    <label style={styles.formLabel}>Amount Per Share(Admin)</label>
+                    <input 
+                      type="number" 
+                      value={amountPerShare} 
+                      onChange={(e) => setAmountPerShare(Number(e.target.value))} 
+                      style={styles.formInput} 
+                    />
+                  </div>
+                  
+                  <div style={styles.formGroup}>
+                    <label style={styles.formLabel}>How much paying? <span style={styles.requiredField}>*</span></label>
+                    <input 
+                      type="number" 
+                      value={howMuchPaying} 
+                      onChange={(e) => {
+                        const value = Math.min(
+                          derivedValues.totalShares - derivedValues.totalSharesPaid, 
+                          Math.max(0, Number(e.target.value))
+                        );
+                        setHowMuchPaying(value);
+                        setFormErrors({...formErrors, howMuchPaying: null});
+                      }} 
+                      max={derivedValues.totalShares - derivedValues.totalSharesPaid}
+                      min={0}
+                      style={{
+                        ...styles.formInput,
+                        ...(formErrors.howMuchPaying ? styles.inputError : {}),
+                        ...(derivedValues.totalShares - derivedValues.totalSharesPaid <= 0 ? styles.inputDisabled : {})
+                      }} 
+                      disabled={derivedValues.totalShares - derivedValues.totalSharesPaid <= 0}
+                      required
+                    />
+                    {formErrors.howMuchPaying && (
+                      <div style={styles.errorMessage}>{formErrors.howMuchPaying}</div>
+                    )}
+                    <span style={styles.formHint}>
+                      {derivedValues.totalShares - derivedValues.totalSharesPaid > 0 
+                        ? `Maximum available: ${derivedValues.totalShares - derivedValues.totalSharesPaid} shares` 
+                        : "No shares available for payment"}
+                    </span>
+                  </div>
+                  
+                  <div style={styles.formGroup}>
+                    <label style={styles.formLabel}>TOTAL AMOUNT</label>
+                    <input 
+                      type="text" 
+                      value={derivedValues.totalAmount} 
+                      readOnly 
+                      style={styles.formInput} 
+                    />
+                  </div>
+                  
+                  <div style={styles.formGroup}>
+                    <label style={styles.formLabel}>PAID AMOUNT</label>
+                    <input 
+                      type="text" 
+                      value={derivedValues.currentPaidAmount || 0} 
+                      readOnly 
+                      style={styles.formInput} 
+                    />
+                  </div>
+                  
+                  <div style={styles.formGroup}>
+                    <label style={styles.formLabel}>Balance</label>
+                    <input 
+                      type="text" 
+                      value={derivedValues.balance || 0} 
+                      readOnly 
+                      style={styles.formInput} 
+                    />
+                  </div>
+                  
+                  <div style={styles.formGroup}>
+                    <label style={styles.formLabel}>PAID BY <span style={styles.requiredField}>*</span></label>
+                    <input 
+                      type="text" 
+                      value={paidBy} 
+                      onChange={(e) => {
+                        setPaidBy(e.target.value);
+                        setFormErrors({...formErrors, paidBy: null});
+                      }} 
+                      style={{
+                        ...styles.formInput,
+                        ...(formErrors.paidBy ? styles.inputError : {})
+                      }} 
+                      required
+                    />
+                    {formErrors.paidBy && (
+                      <div style={styles.errorMessage}>{formErrors.paidBy}</div>
+                    )}
+                  </div>
+                  
+                  <div style={styles.formGroup}>
+                    <label style={styles.formLabel}>COLLECTED BY <span style={styles.requiredField}>*</span></label>
+                    <input 
+                      type="text" 
+                      value={collectedBy} 
+                      onChange={(e) => {
+                        setCollectedBy(e.target.value);
+                        setFormErrors({...formErrors, collectedBy: null});
+                      }} 
+                      style={{
+                        ...styles.formInput,
+                        ...(formErrors.collectedBy ? styles.inputError : {})
+                      }} 
+                      required
+                    />
+                    {formErrors.collectedBy && (
+                      <div style={styles.errorMessage}>{formErrors.collectedBy}</div>
+                    )}
+                  </div>
+                </div>
+                
+                <div style={styles.imageUploadSection}>
+                  <div style={{
+                    ...styles.imagePreview,
+                    ...(formErrors.image ? styles.imagePreviewError : {})
+                  }}>
+                    {selectedImage ? (
+                      <img src={selectedImage} alt="Selected" style={styles.previewImage} />
+                    ) : (
+                      <div style={styles.placeholderImage}>
+                        <CameraIcon style={styles.cameraIconLarge} />
+                        <div style={styles.imageRequiredText}>
+                          Image Required <span style={styles.requiredField}>*</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  {formErrors.image && (
+                    <div style={styles.errorMessage}>{formErrors.image}</div>
+                  )}
+                  
+                  <div style={styles.imageActions}>
+                    {/* File upload input */}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      style={{ display: 'none' }}
+                      ref={fileInputRef}
+                    />
+                    
+                    {/* Camera capture input */}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageSelect}
+                      style={{ display: 'none' }}
+                      ref={cameraInputRef}
+                      capture="environment"
+                    />
+                    
+                    <button 
+                      type="button" 
+                      onClick={handleFileUpload} 
+                      style={styles.imageButton}
+                    >
+                      <UploadIcon style={styles.btnIcon} />
+                      <span style={styles.buttonText}>Upload Image</span>
+                    </button>
+                    
+                    <button 
+                      type="button" 
+                      onClick={handleCameraCapture} 
+                      style={styles.cameraButton}
+                    >
+                      <CameraIcon style={styles.btnIcon} />
+                      <span style={styles.buttonText}>Take Photo</span>
+                    </button>
+                  </div>
+                </div>
+                
+                <div style={styles.formActions}>
+                  <button 
+                    type="submit" 
+                    style={{
+                      ...styles.submitButton,
+                      ...(derivedValues.totalShares - derivedValues.totalSharesPaid <= 0 ? styles.btnDisabled : {})
+                    }}
+                    disabled={derivedValues.totalShares - derivedValues.totalSharesPaid <= 0}
+                  >
+                    Submit Payment
+                  </button>
+                </div>
+              </form>
+              
+              {currentTransactionLog.length > 0 && (
+                <div style={styles.transactionLogSection}>
+                  <h3 style={styles.sectionTitle}>Transaction History</h3>
+                  <div style={styles.transactionTable}>
+                    <div style={styles.transactionTableHeader}>
+                      <div style={styles.transactionTableRow}>
+                        <div style={styles.transactionTableCell}>Date</div>
+                        <div style={styles.transactionTableCell}>Shares</div>
+                        <div style={styles.transactionTableCell}>Amount</div>
+                        <div style={styles.transactionTableCell}>Paid By</div>
+                        <div style={styles.transactionTableCell}>Collected By</div>
+                      </div>
+                    </div>
+                    <div style={styles.transactionTableBody}>
+                      {currentTransactionLog.map((transaction, index) => (
+                        <div key={index} style={styles.transactionTableRow}>
+                          <div style={styles.transactionTableCell}>{transaction.date}</div>
+                          <div style={styles.transactionTableCell}>{transaction.shares}</div>
+                          <div style={styles.transactionTableCell}>{transaction.amount}</div>
+                          <div style={styles.transactionTableCell}>{transaction.paidBy}</div>
+                          <div style={styles.transactionTableCell}>{transaction.collectedBy}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       <style jsx global>{`
         .data-row:hover {
@@ -220,6 +790,21 @@ const EyeIcon = ({ style }) => (
   <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
     <circle cx="12" cy="12" r="3"></circle>
+  </svg>
+);
+
+const CameraIcon = ({ style }) => (
+  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+    <circle cx="12" cy="13" r="4"></circle>
+  </svg>
+);
+
+const UploadIcon = ({ style }) => (
+  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+    <polyline points="17 8 12 3 7 8"></polyline>
+    <line x1="12" y1="3" x2="12" y2="15"></line>
   </svg>
 );
 
@@ -384,6 +969,12 @@ const styles = {
     fontSize: '1vw',
     fontWeight: 500,
   },
+  hissaContainer: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.3vw',
+  },
   hissaBadge: {
     display: 'inline-flex',
     alignItems: 'center',
@@ -393,6 +984,10 @@ const styles = {
     fontWeight: 500,
     borderRadius: '2vw',
     fontSize: '1vw',
+  },
+  hissaStatus: {
+    fontSize: '0.8vw',
+    color: '#64748b',
   },
   btn: {
     width: '2.2vw',
@@ -412,6 +1007,19 @@ const styles = {
   btnSecondary: {
     backgroundColor: '#f1f5f9',
     color: '#475569',
+  },
+  btnDisabled: {
+    backgroundColor: '#94a3b8',
+    color: '#e2e8f0',
+    cursor: 'not-allowed',
+    opacity: 0.7,
+    transform: 'none !important',
+    boxShadow: 'none !important',
+  },
+  inputDisabled: {
+    backgroundColor: '#f1f5f9',
+    color: '#94a3b8',
+    cursor: 'not-allowed',
   },
   emptyState: {
     display: 'flex',
@@ -445,6 +1053,382 @@ const styles = {
   emptyText: {
     fontSize: '0.9vw',
     color: '#475569',
+  },
+  
+  // Modal styles
+  modalOverlay: {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1000,
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    borderRadius: '0.5vw',
+    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
+    width: '80%',
+    maxWidth: '1200px',
+    maxHeight: '90vh',
+    overflow: 'auto',
+    position: 'relative',
+  },
+  modalHeader: {
+    padding: '1.5vw',
+    borderBottom: '1px solid #e2e8f0',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    position: 'sticky',
+    top: 0,
+    backgroundColor: 'white',
+    zIndex: 1,
+  },
+  modalTitle: {
+    fontSize: '1.5vw',
+    fontWeight: 600,
+    color: '#1e293b',
+    margin: 0,
+  },
+  closeButton: {
+    background: 'none',
+    border: 'none',
+    fontSize: '2vw',
+    fontWeight: 300,
+    color: '#64748b',
+    cursor: 'pointer',
+    padding: '0.5vw',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '2.5vw',
+    height: '2.5vw',
+    borderRadius: '50%',
+    transition: 'all 0.2s ease',
+  },
+  modalBody: {
+    padding: '1.5vw',
+  },
+  
+  // Eye modal specific styles
+  recordDetails: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '1vw',
+    marginBottom: '2vw',
+    padding: '1vw',
+    backgroundColor: '#f8fafc',
+    borderRadius: '0.5vw',
+  },
+  recordItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5vw',
+  },
+  recordLabel: {
+    fontSize: '0.9vw',
+    color: '#64748b',
+    fontWeight: 500,
+  },
+  recordValue: {
+    fontSize: '1.1vw',
+    color: '#1e293b',
+    fontWeight: 600,
+  },
+  recordTable: {
+    border: '1px solid #e2e8f0',
+    borderRadius: '0.5vw',
+    overflow: 'hidden',
+  },
+  recordTableHeader: {
+    backgroundColor: '#f8fafc',
+    borderBottom: '1px solid #e2e8f0',
+  },
+  recordTableRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 2fr 1.5fr 1fr',
+    gap: '1vw',
+    padding: '1vw',
+    borderBottom: '1px solid #e2e8f0',
+  },
+  recordTableCell: {
+    fontSize: '1vw',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  recordTableBody: {
+    maxHeight: '50vh',
+    overflowY: 'auto',
+  },
+  
+  // Receipt modal specific styles
+  shareStatusContainer: {
+    marginBottom: '2vw',
+    border: '1px solid #e2e8f0',
+    borderRadius: '0.5vw',
+    overflow: 'hidden',
+  },
+  shareStatusHeader: {
+    backgroundColor: '#046307',
+    color: 'white',
+    padding: '0.8vw 1.5vw',
+    fontSize: '1.2vw',
+    fontWeight: 600,
+  },
+  shareStatusGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '1vw',
+    padding: '1.5vw',
+    backgroundColor: '#f8fafc',
+  },
+  shareStatusItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.5vw',
+  },
+  shareStatusLabel: {
+    fontSize: '0.9vw',
+    color: '#64748b',
+    fontWeight: 500,
+  },
+  shareStatusValue: {
+    fontSize: '1.5vw',
+    color: '#1e293b',
+    fontWeight: 700,
+  },
+  
+  financialSummaryContainer: {
+    marginBottom: '2vw',
+    border: '1px solid #e2e8f0',
+    borderRadius: '0.5vw',
+    overflow: 'hidden',
+  },
+  financialSummaryHeader: {
+    backgroundColor: '#046307',
+    color: 'white',
+    padding: '0.8vw 1.5vw',
+    fontSize: '1.2vw',
+    fontWeight: 600,
+  },
+  financialSummaryGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '1vw',
+    padding: '1.5vw',
+    backgroundColor: '#f8fafc',
+  },
+  financialSummaryItem: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '0.5vw',
+  },
+  financialSummaryLabel: {
+    fontSize: '0.9vw',
+    color: '#64748b',
+    fontWeight: 500,
+  },
+  financialSummaryValue: {
+    fontSize: '1.5vw',
+    color: '#1e293b',
+    fontWeight: 700,
+  },
+  
+  receiptSummary: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5vw',
+    marginBottom: '2vw',
+    padding: '1vw',
+    backgroundColor: '#f8fafc',
+    borderRadius: '0.5vw',
+  },
+  receiptSummaryItem: {
+    fontSize: '1vw',
+    color: '#1e293b',
+    fontWeight: 500,
+  },
+  receiptForm: {
+    marginBottom: '2vw',
+  },
+  formGrid: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(4, 1fr)',
+    gap: '1.5vw',
+    marginBottom: '2vw',
+  },
+  formGroup: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '0.5vw',
+  },
+  formLabel: {
+    fontSize: '0.9vw',
+    color: '#64748b',
+    fontWeight: 500,
+  },
+  formInput: {
+    padding: '0.8vw 1vw',
+    border: '1px solid #e2e8f0',
+    borderRadius: '0.4vw',
+    fontSize: '1vw',
+    color: '#1e293b',
+    backgroundColor: '#ffffff',
+    transition: 'all 0.2s ease',
+  },
+  formHint: {
+    fontSize: '0.8vw',
+    color: '#64748b',
+    marginTop: '0.3vw',
+  },
+  requiredField: {
+    color: '#e11d48',
+    fontWeight: 'bold',
+  },
+  inputError: {
+    border: '1px solid #e11d48',
+    backgroundColor: 'rgba(225, 29, 72, 0.05)',
+  },
+  errorMessage: {
+    color: '#e11d48',
+    fontSize: '0.8vw',
+    marginTop: '0.3vw',
+  },
+  imageUploadSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    gap: '1vw',
+    marginBottom: '2vw',
+  },
+  imagePreview: {
+    width: '15vw',
+    height: '15vw',
+    border: '2px dashed #e2e8f0',
+    borderRadius: '0.5vw',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  imagePreviewError: {
+    border: '2px dashed #e11d48',
+    backgroundColor: 'rgba(225, 29, 72, 0.05)',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+  },
+  placeholderImage: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#f8fafc',
+    gap: '1vw',
+  },
+  imageRequiredText: {
+    fontSize: '0.9vw',
+    color: '#64748b',
+  },
+  cameraIconLarge: {
+    width: '3vw',
+    height: '3vw',
+    color: '#94a3b8',
+  },
+  imageActions: {
+    display: 'flex',
+    gap: '1vw',
+  },
+  imageButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5vw',
+    padding: '0.8vw 1.5vw',
+    backgroundColor: '#f1f5f9',
+    color: '#475569',
+    borderRadius: '0.4vw',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  cameraButton: {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '0.5vw',
+    padding: '0.8vw 1.5vw',
+    backgroundColor: '#046307',
+    color: 'white',
+    borderRadius: '0.4vw',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  buttonText: {
+    fontSize: '0.9vw',
+    fontWeight: 500,
+  },
+  formActions: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginTop: '2vw',
+  },
+  submitButton: {
+    padding: '0.8vw 2vw',
+    backgroundColor: '#046307',
+    color: 'white',
+    fontSize: '1vw',
+    fontWeight: 500,
+    border: 'none',
+    borderRadius: '0.4vw',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  transactionLogSection: {
+    marginTop: '3vw',
+  },
+  sectionTitle: {
+    fontSize: '1.2vw',
+    fontWeight: 600,
+    color: '#1e293b',
+    marginBottom: '1vw',
+  },
+  transactionTable: {
+    border: '1px solid #e2e8f0',
+    borderRadius: '0.5vw',
+    overflow: 'hidden',
+  },
+  transactionTableHeader: {
+    backgroundColor: '#f8fafc',
+    borderBottom: '1px solid #e2e8f0',
+  },
+  transactionTableRow: {
+    display: 'grid',
+    gridTemplateColumns: '1fr 1fr 1fr 1.5fr 1.5fr',
+    gap: '1vw',
+    padding: '1vw',
+    borderBottom: '1px solid #e2e8f0',
+  },
+  transactionTableCell: {
+    fontSize: '1vw',
+    display: 'flex',
+    alignItems: 'center',
+  },
+  transactionTableBody: {
+    maxHeight: '30vh',
+    overflowY: 'auto',
   },
 };
 
