@@ -37,8 +37,8 @@ const Dashboard = () => {
     });
     if (response.data.success) {
       setAdminData({
-        m_a_cost: parseFloat(response.data.data.m_a_cost),
-        oom_a_cost: parseFloat(response.data.data.oom_a_cost)
+        m_a_cost: parseFloat(response.data.data.m_a_cost) / 7,
+        oom_a_cost: parseFloat(response.data.data.oom_a_cost) / 7
       });
     }
   };

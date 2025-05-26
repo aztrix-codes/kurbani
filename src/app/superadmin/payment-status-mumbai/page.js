@@ -1,45 +1,126 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-const FinancialTable = () => {
+const SummaryTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [data] = useState([ 
-    { id: 1, zone: "North Zone", area: "Andheri", submittedBy: "Ahmed Hassan", totalHissa: 3, totalAmount: 45000, totalPaid: 30000, balance: 15000 }, 
-    { id: 2, zone: "South Zone", area: "Bandra", submittedBy: "Fatima Ali", totalHissa: 2, totalAmount: 30000, totalPaid: 30000, balance: 0 }, 
-    { id: 3, zone: "East Zone", area: "Kurla", submittedBy: "Omar Sheikh", totalHissa: 5, totalAmount: 75000, totalPaid: 50000, balance: 25000 }, 
-    { id: 4, zone: "West Zone", area: "Juhu", submittedBy: "Aisha Khan", totalHissa: 1, totalAmount: 15000, totalPaid: 10000, balance: 5000 }, 
-    { id: 5, zone: "Central Zone", area: "Dadar", submittedBy: "Ibrahim Malik", totalHissa: 4, totalAmount: 60000, totalPaid: 60000, balance: 0 }, 
-    { id: 6, zone: "North Zone", area: "Goregaon", submittedBy: "Zainab Ahmed", totalHissa: 2, totalAmount: 30000, totalPaid: 15000, balance: 15000 }, 
-    { id: 7, zone: "South Zone", area: "Colaba", submittedBy: "Muhammad Tariq", totalHissa: 3, totalAmount: 45000, totalPaid: 45000, balance: 0 }, 
-    { id: 8, zone: "East Zone", area: "Chembur", submittedBy: "Khadija Begum", totalHissa: 1, totalAmount: 15000, totalPaid: 5000, balance: 10000 }, 
-    { id: 9, zone: "West Zone", area: "Versova", submittedBy: "Yusuf Rahman", totalHissa: 2, totalAmount: 30000, totalPaid: 30000, balance: 0 }, 
-    { id: 10, zone: "Central Zone", area: "Parel", submittedBy: "Mariam Siddique", totalHissa: 3, totalAmount: 45000, totalPaid: 30000, balance: 15000 } 
-  ]);
+  const [users, setUsers] = useState([]);
+  const [customerData, setCustomerData] = useState([]);
+  const [areasList, setAreasList] = useState([]);
+  const [adminData, setAdminData] = useState({
+    m_a_cost: 4300
+  });
+  const [loading, setLoading] = useState(true);
+  const [summaryData, setSummaryData] = useState([]);
 
-  const exportToExcel = () => {
-    console.log('Exporting to Excel...');
+  // Fetch all required data
+  useEffect(() => {
+    const fetchAllData = async () => {
+      setLoading(true);
+      try {
+        // Fetch users
+        const usersResponse = await axios.get('/api/users');
+        setUsers(usersResponse.data);
+        
+        // Fetch customers
+        const customersResponse = await axios.get('/api/customers?user_id=0');
+        setCustomerData(customersResponse.data);
+        
+        // Fetch areas
+        const areasResponse = await axios.get('/api/areas');
+        setAreasList(areasResponse.data);
+        
+        // Fetch admin data for m_a_cost
+        const adminResponse = await axios.get('/api/superadmin', {
+          params: { name: 'superadmin', password: 'super123' }
+        });
+        
+        if (adminResponse.data.success) {
+          setAdminData({
+            m_a_cost: parseFloat(adminResponse.data.data.m_a_cost)
+          });
+        }
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setLoading(false);
+      }
+    };
+    
+    fetchAllData();
+  }, []);
+
+  // Calculate summary data whenever the source data changes
+  useEffect(() => {
+    if (users.length > 0 && customerData.length > 0 && areasList.length > 0) {
+      calculateSummaryData();
+    }
+  }, [users, customerData, areasList, adminData]);
+
+  // Calculate summary data for each user
+  const calculateSummaryData = () => {
+    const summary = users.map((user, index) => {
+      // Filter customers for this user where status is 1 and zone is Mumbai
+      const userCustomers = customerData.filter(customer => 
+        customer.user_id == user.user_id && 
+        customer.status === 1 && 
+        customer.zone === 'Mumbai'
+      );
+      
+      // Calculate total hissa (count of filtered records)
+      const totalHissa = userCustomers.length;
+      
+      // Calculate total amount based on m_a_cost
+      // Formula: (totalHissa / 7) * m_a_cost
+      const totalAnimals = Math.floor(totalHissa / 7);
+      const remainingShares = totalHissa % 7;
+      const totalAmount = (totalAnimals * adminData.m_a_cost) + (remainingShares * (adminData.m_a_cost / 7));
+      
+      // Calculate paid amount based on payment_status
+      const paidCustomers = userCustomers.filter(customer => customer.payment_status === 1);
+      const paidHissa = paidCustomers.length;
+      const paidAnimals = Math.floor(paidHissa / 7);
+      const paidRemainingShares = paidHissa % 7;
+      const paidAmount = (paidAnimals * adminData.m_a_cost) + (paidRemainingShares * (adminData.m_a_cost / 7));
+      
+      // Find the zone_name from areasList based on matching area_name
+      const matchedArea = areasList.find(area => area.area_name === user.area_name);
+      const zoneName = matchedArea ? matchedArea.zone_name : 'N/A';
+      
+      return {
+        id: index + 1,
+        user_id: user.user_id,
+        username: user.username,
+        area_name: user.area_name || 'N/A',
+        zone_name: zoneName,
+        total_hissa: totalHissa,
+        total_amount: Math.ceil(totalAmount), // Round up to nearest whole number
+        paid_hissa: paidHissa,
+        paid_amount: Math.ceil(paidAmount), // Round up to nearest whole number
+        pending_hissa: totalHissa - paidHissa,
+        pending_amount: Math.ceil(totalAmount - paidAmount) // Round up to nearest whole number
+      };
+    });
+    
+    // Filter out users with no Mumbai customers
+    const filteredSummary = summary.filter(item => item.total_hissa > 0);
+    
+    setSummaryData(filteredSummary);
   };
 
-  const filteredData = data.filter(item =>
+  // Filter summary data based on search term
+  const filteredData = summaryData.filter(item =>
     Object.values(item).some(val =>
-      String(val).toLowerCase().includes(searchTerm.toLowerCase())
+      val && String(val).toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
-  // Calculate totals for the stats section
-  const totalHissa = data.reduce((sum, item) => sum + item.totalHissa, 0);
-  const totalAmount = data.reduce((sum, item) => sum + item.totalAmount, 0);
-  const totalPaid = data.reduce((sum, item) => sum + item.totalPaid, 0);
-  const totalBalance = data.reduce((sum, item) => sum + item.balance, 0);
-
-  // Format currency
-  const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount);
+  // Export to Excel
+  const exportToExcel = () => {
+    console.log('Exporting to Excel...');
+    // Implementation would go here
   };
 
   return (
@@ -49,7 +130,7 @@ const FinancialTable = () => {
         <div style={styles.header}>
           <div style={styles.headerContent}>
             <div style={styles.headerTitle}>
-              <h1 style={styles.h1}>Payment Status - Mumbai</h1>
+              <h1 style={styles.h1}>Summary Report - Mumbai</h1>
             </div>
             
             <div style={styles.headerActions}>
@@ -78,23 +159,11 @@ const FinancialTable = () => {
           
           {/* Stats */}
           <div style={styles.stats}>
-            <div style={styles.statsRow}>
-              <div style={styles.statsItem}>
-                <span style={styles.statsLabel}>Total Hissa:</span>
-                <span style={styles.statsValue}>{totalHissa}</span>
-              </div>
-              <div style={styles.statsItem}>
-                <span style={styles.statsLabel}>Total Amount:</span>
-                <span style={styles.statsValue}>{formatCurrency(totalAmount)}</span>
-              </div>
-              <div style={styles.statsItem}>
-                <span style={styles.statsLabel}>Total Paid:</span>
-                <span style={styles.statsValue}>{formatCurrency(totalPaid)}</span>
-              </div>
-              <div style={styles.statsItem}>
-                <span style={styles.statsLabel}>Balance:</span>
-                <span style={styles.statsValue}>{formatCurrency(totalBalance)}</span>
-              </div>
+            <div style={styles.statsText}>
+              Total Records: <span style={styles.statsValue}>{summaryData.length}</span>
+            </div>
+            <div style={styles.statsText}>
+              Cost Per Animal: <span style={styles.statsValue}>₹{adminData.m_a_cost}</span>
             </div>
           </div>
         </div>
@@ -104,20 +173,27 @@ const FinancialTable = () => {
           {/* Table Header */}
           <div style={styles.tableHeader}>
             <div style={styles.tableRow}>
-              <div style={{...styles.tableCell, ...styles.cellId, ...styles.headerCell}}>ID</div>
-              <div style={{...styles.tableCell, ...styles.cellZone, ...styles.headerCell}}>ZONE</div>
+              <div style={{...styles.tableCell, ...styles.cellId, ...styles.headerCell}}>Sr no.</div>
+              <div style={{...styles.tableCell, ...styles.cellNigra, ...styles.headerCell}}>NIGRA</div>
               <div style={{...styles.tableCell, ...styles.cellArea, ...styles.headerCell}}>AREA</div>
-              <div style={{...styles.tableCell, ...styles.cellSubmitted, ...styles.headerCell}}>NIGRA</div>
+              <div style={{...styles.tableCell, ...styles.cellZone, ...styles.headerCell}}>ZONE</div>
               <div style={{...styles.tableCell, ...styles.cellHissa, ...styles.headerCell}}>TOTAL HISSA</div>
               <div style={{...styles.tableCell, ...styles.cellAmount, ...styles.headerCell}}>TOTAL AMOUNT</div>
-              <div style={{...styles.tableCell, ...styles.cellPaid, ...styles.headerCell}}>TOTAL PAID</div>
-              <div style={{...styles.tableCell, ...styles.cellBalance, ...styles.headerCell}}>BALANCE</div>
+              <div style={{...styles.tableCell, ...styles.cellPaid, ...styles.headerCell}}>PAID HISSA</div>
+              <div style={{...styles.tableCell, ...styles.cellPaidAmount, ...styles.headerCell}}>PAID AMOUNT</div>
+              <div style={{...styles.tableCell, ...styles.cellPending, ...styles.headerCell}}>PENDING</div>
+              <div style={{...styles.tableCell, ...styles.cellPendingAmount, ...styles.headerCell}}>PENDING AMOUNT</div>
             </div>
           </div>
 
           {/* Table Body */}
           <div style={styles.tableBody}>
-            {filteredData.length > 0 ? (
+            {loading ? (
+              <div style={styles.loadingState}>
+                <div style={styles.spinner}></div>
+                <p style={styles.loadingText}>Loading data...</p>
+              </div>
+            ) : filteredData.length > 0 ? (
               filteredData.map((item) => (
                 <div 
                   key={item.id} 
@@ -129,43 +205,49 @@ const FinancialTable = () => {
                     <span style={styles.idText}>{item.id}</span>
                   </div>
                   
-                  {/* Zone */}
-                  <div style={{...styles.tableCell, ...styles.cellZone}}>
-                    <span style={styles.zoneText}>{item.zone}</span>
+                  {/* Nigra (Username) */}
+                  <div style={{...styles.tableCell, ...styles.cellNigra}}>
+                    <span style={styles.nigraText}>{item.username}</span>
                   </div>
                   
                   {/* Area */}
                   <div style={{...styles.tableCell, ...styles.cellArea}}>
-                    <span style={styles.areaText}>{item.area}</span>
+                    <span style={styles.areaText}>{item.area_name}</span>
                   </div>
                   
-                  {/* Submitted By */}
-                  <div style={{...styles.tableCell, ...styles.cellSubmitted}}>
-                    <span style={styles.submittedText}>{item.submittedBy}</span>
+                  {/* Zone */}
+                  <div style={{...styles.tableCell, ...styles.cellZone}}>
+                    <span style={styles.zoneText}>{item.zone_name}</span>
                   </div>
                   
                   {/* Total Hissa */}
                   <div style={{...styles.tableCell, ...styles.cellHissa}}>
-                    <span style={styles.hissaBadge}>{item.totalHissa}</span>
+                    <span style={styles.hissaText}>{item.total_hissa}</span>
                   </div>
                   
                   {/* Total Amount */}
                   <div style={{...styles.tableCell, ...styles.cellAmount}}>
-                    <span style={styles.amountText}>{formatCurrency(item.totalAmount)}</span>
+                    <span style={styles.amountText}>₹{item.total_amount}</span>
                   </div>
                   
-                  {/* Total Paid */}
+                  {/* Paid Hissa */}
                   <div style={{...styles.tableCell, ...styles.cellPaid}}>
-                    <span style={styles.paidText}>{formatCurrency(item.totalPaid)}</span>
+                    <span style={styles.paidText}>{item.paid_hissa}</span>
                   </div>
                   
-                  {/* Balance */}
-                  <div style={{...styles.tableCell, ...styles.cellBalance}}>
-                    {item.balance > 0 ? (
-                      <span style={styles.balanceBadge}>{formatCurrency(item.balance)}</span>
-                    ) : (
-                      <span style={styles.paidFullBadge}>Paid</span>
-                    )}
+                  {/* Paid Amount */}
+                  <div style={{...styles.tableCell, ...styles.cellPaidAmount}}>
+                    <span style={styles.paidAmountText}>₹{item.paid_amount}</span>
+                  </div>
+                  
+                  {/* Pending Hissa */}
+                  <div style={{...styles.tableCell, ...styles.cellPending}}>
+                    <span style={styles.pendingText}>{item.pending_hissa}</span>
+                  </div>
+                  
+                  {/* Pending Amount */}
+                  <div style={{...styles.tableCell, ...styles.cellPendingAmount}}>
+                    <span style={styles.pendingAmountText}>₹{item.pending_amount}</span>
                   </div>
                 </div>
               ))
@@ -179,6 +261,50 @@ const FinancialTable = () => {
               </div>
             )}
           </div>
+          
+          {/* Table Footer with Totals */}
+          {filteredData.length > 0 && (
+            <div style={styles.tableFooter}>
+              <div style={styles.tableRow}>
+                <div style={{...styles.tableCell, ...styles.cellId}}></div>
+                <div style={{...styles.tableCell, ...styles.cellNigra}}></div>
+                <div style={{...styles.tableCell, ...styles.cellArea}}></div>
+                <div style={{...styles.tableCell, ...styles.cellZone}}>
+                  <span style={styles.footerLabel}>TOTALS:</span>
+                </div>
+                <div style={{...styles.tableCell, ...styles.cellHissa}}>
+                  <span style={styles.footerValue}>
+                    {filteredData.reduce((sum, item) => sum + item.total_hissa, 0)}
+                  </span>
+                </div>
+                <div style={{...styles.tableCell, ...styles.cellAmount}}>
+                  <span style={styles.footerValue}>
+                    ₹{filteredData.reduce((sum, item) => sum + item.total_amount, 0)}
+                  </span>
+                </div>
+                <div style={{...styles.tableCell, ...styles.cellPaid}}>
+                  <span style={styles.footerValue}>
+                    {filteredData.reduce((sum, item) => sum + item.paid_hissa, 0)}
+                  </span>
+                </div>
+                <div style={{...styles.tableCell, ...styles.cellPaidAmount}}>
+                  <span style={styles.footerValue}>
+                    ₹{filteredData.reduce((sum, item) => sum + item.paid_amount, 0)}
+                  </span>
+                </div>
+                <div style={{...styles.tableCell, ...styles.cellPending}}>
+                  <span style={styles.footerValue}>
+                    {filteredData.reduce((sum, item) => sum + item.pending_hissa, 0)}
+                  </span>
+                </div>
+                <div style={{...styles.tableCell, ...styles.cellPendingAmount}}>
+                  <span style={styles.footerValue}>
+                    ₹{filteredData.reduce((sum, item) => sum + item.pending_amount, 0)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       
@@ -218,6 +344,11 @@ const FinancialTable = () => {
         
         .table-body::-webkit-scrollbar-thumb:hover {
           background-color: #94a3b8;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
       `}</style>
     </div>
@@ -331,27 +462,15 @@ const styles = {
     marginTop: '1vw',
     paddingTop: '1vw',
     borderTop: '1px solid rgba(255, 255, 255, 0.2)',
-  },
-  statsRow: {
     display: 'flex',
-    flexWrap: 'wrap',
     gap: '2vw',
-  },
-  statsItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.3vw',
-  },
-  statsLabel: {
-    fontSize: '0.9vw',
-    opacity: 0.9,
-  },
-  statsValue: {
-    fontSize: '1.2vw',
-    fontWeight: 600,
   },
   statsText: {
     fontSize: '1vw',
+  },
+  statsValue: {
+    fontWeight: 600,
+    opacity: 1,
   },
   tableContainer: {
     overflow: 'hidden',
@@ -362,14 +481,14 @@ const styles = {
   },
   tableRow: {
     display: 'grid',
-    gridTemplateColumns: '0.5fr 1fr 1fr 1.5fr 0.8fr 1fr 1fr 1fr',
-    gap: '1vw',
-    padding: '0 2vw',
+    gridTemplateColumns: '0.5fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr',
+    gap: '0.5vw',
+    padding: '0 1vw',
   },
   headerCell: {
     paddingTop: '1.2vw',
     paddingBottom: '1.2vw',
-    fontSize: '1vw',
+    fontSize: '0.9vw',
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
@@ -378,29 +497,46 @@ const styles = {
   tableCell: {
     display: 'flex',
     alignItems: 'center',
+    justifyContent: 'center',
+    padding: '0.5vw',
   },
   tableBody: {
-    maxHeight: '70vh',
+    maxHeight: '60vh',
     overflowY: 'auto',
   },
   dataRow: {
     display: 'grid',
-    gridTemplateColumns: '0.5fr 1fr 1fr 1.5fr 0.8fr 1fr 1fr 1fr',
-    gap: '1vw',
-    padding: '1vw 2vw',
+    gridTemplateColumns: '0.5fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr 1fr',
+    gap: '0.5vw',
+    padding: '0 1vw',
     borderBottom: '1px solid #e2e8f0',
     transition: 'all 0.2s ease',
+  },
+  tableFooter: {
+    backgroundColor: '#f8fafc',
+    borderTop: '1px solid #e2e8f0',
+    fontWeight: 600,
+  },
+  footerLabel: {
+    fontSize: '0.9vw',
+    fontWeight: 700,
+    color: '#475569',
+  },
+  footerValue: {
+    fontSize: '0.9vw',
+    fontWeight: 700,
+    color: '#046307',
   },
   cellId: {
     justifyContent: 'center',
   },
-  cellZone: {
+  cellNigra: {
     justifyContent: 'center',
   },
   cellArea: {
     justifyContent: 'center',
   },
-  cellSubmitted: {
+  cellZone: {
     justifyContent: 'center',
   },
   cellHissa: {
@@ -412,67 +548,58 @@ const styles = {
   cellPaid: {
     justifyContent: 'center',
   },
-  cellBalance: {
+  cellPaidAmount: {
+    justifyContent: 'center',
+  },
+  cellPending: {
+    justifyContent: 'center',
+  },
+  cellPendingAmount: {
     justifyContent: 'center',
   },
   idText: {
-    fontSize: '1vw',
+    fontSize: '0.9vw',
     fontWeight: 700,
     color: '#046307',
   },
-  zoneText: {
-    fontSize: '1vw',
+  nigraText: {
+    fontSize: '0.9vw',
     fontWeight: 500,
   },
   areaText: {
-    fontSize: '1vw',
-  },
-  submittedText: {
-    fontSize: '1vw',
-  },
-  hissaBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '0.3vw 0.8vw',
-    backgroundColor: 'rgba(4, 99, 7, 0.1)',
-    color: '#046307',
-    fontWeight: 500,
-    borderRadius: '2vw',
     fontSize: '0.9vw',
-    minWidth: '3vw',
+  },
+  zoneText: {
+    fontSize: '0.9vw',
+  },
+  hissaText: {
+    fontSize: '0.9vw',
+    fontWeight: 600,
   },
   amountText: {
-    fontSize: '1vw',
-    fontWeight: 500,
+    fontSize: '0.9vw',
+    fontWeight: 600,
+    color: '#1e40af',
   },
   paidText: {
-    fontSize: '1vw',
-    fontWeight: 500,
-  },
-  balanceBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '0.3vw 0.8vw',
-    backgroundColor: '#fef3c7', // Yellow background
-    color: '#92400e', // Yellow-brown text
-    fontWeight: 500,
-    borderRadius: '2vw',
     fontSize: '0.9vw',
-    minWidth: '5vw',
+    fontWeight: 600,
+    color: '#047857',
   },
-  paidFullBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '0.3vw 0.8vw',
-    backgroundColor: '#dcfce7', // Green background
-    color: '#166534', // Green text
-    fontWeight: 500,
-    borderRadius: '2vw',
+  paidAmountText: {
     fontSize: '0.9vw',
-    minWidth: '5vw',
+    fontWeight: 600,
+    color: '#047857',
+  },
+  pendingText: {
+    fontSize: '0.9vw',
+    fontWeight: 600,
+    color: '#b91c1c',
+  },
+  pendingAmountText: {
+    fontSize: '0.9vw',
+    fontWeight: 600,
+    color: '#b91c1c',
   },
   emptyState: {
     display: 'flex',
@@ -507,6 +634,26 @@ const styles = {
     fontSize: '0.9vw',
     color: '#475569',
   },
+  loadingState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '6vw 0',
+  },
+  spinner: {
+    width: '3vw',
+    height: '3vw',
+    border: '0.3vw solid #f3f4f6',
+    borderTop: '0.3vw solid #046307',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+    marginBottom: '1vw',
+  },
+  loadingText: {
+    fontSize: '1.2vw',
+    color: '#4b5563',
+  },
 };
 
-export default FinancialTable;
+export default SummaryTable;

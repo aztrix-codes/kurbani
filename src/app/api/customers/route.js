@@ -98,13 +98,85 @@ export async function PUT(request) {
   }
 }
 
+
+// Add this function to your existing API file
+export async function PATCH_BULK_PAYMENT_STATUS(request) {
+  try {
+    const { customer_ids } = await request.json();
+    
+    // Validate that customer_ids is an array and not empty
+    if (!Array.isArray(customer_ids) || customer_ids.length === 0) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'customer_ids must be a non-empty array of IDs' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    // Create placeholders for the SQL query
+    const placeholders = customer_ids.map(() => '?').join(',');
+    
+    // Update payment_status to true (1) for all provided IDs
+    const [result] = await pool.query(
+      `UPDATE customers SET payment_status = TRUE WHERE id IN (${placeholders})`,
+      customer_ids
+    );
+
+    // Check if any records were updated
+    if (result.affectedRows === 0) {
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'No matching customer records found' 
+      }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+
+    return new Response(JSON.stringify({ 
+      success: true,
+      message: `Payment status updated for ${result.affectedRows} customer(s)`,
+      updated_count: result.affectedRows
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  } catch (error) {
+    console.error('Error updating payment status:', error);
+    return new Response(JSON.stringify({ 
+      success: false,
+      error: error.message 
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  }
+}
+
+// Modify your existing PATCH function to handle bulk updates
 export async function PATCH(request) {
+  const { searchParams } = new URL(request.url);
+  const bulk = searchParams.get('bulk');
+  const type = searchParams.get('type');
+  
+  // Handle bulk payment status update
+  if (bulk === 'true' && type === 'payment_status') {
+    return PATCH_BULK_PAYMENT_STATUS(request);
+  }
+  
+  // Original PATCH logic for status update
   try {
     const { user_id, spl_id, status } = await request.json();
     
     if (!user_id || !spl_id || typeof status !== 'boolean') {
-      return new Response(JSON.stringify({ error: 'Missing required fields' }), {
-        status: 400
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Missing required fields' 
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
       });
     }
 
@@ -114,22 +186,34 @@ export async function PATCH(request) {
     );
 
     if (result.affectedRows === 0) {
-      return new Response(JSON.stringify({ error: 'Customer not found' }), {
-        status: 404
+      return new Response(JSON.stringify({ 
+        success: false,
+        error: 'Customer not found' 
+      }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
       });
     }
 
     return new Response(JSON.stringify({ 
+      success: true,
       message: 'Customer status updated successfully'
     }), {
-      status: 200
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
     });
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500
+    console.error('Error updating status:', error);
+    return new Response(JSON.stringify({ 
+      success: false,
+      error: error.message 
+    }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
     });
   }
 }
+
 
 
 export async function DELETE_BULK(request) {

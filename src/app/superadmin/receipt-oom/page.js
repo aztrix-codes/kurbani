@@ -8,19 +8,8 @@ const DataTable = () => {
   const [areasList, setAreasList] = useState([]);
   const [users, setUsers] = useState([]);
   const [customerData, setCustomerData] = useState([]);
-  const [data, setData] = useState([
-    { id: 1, zone: 'North', area: 'Mumbai', submittedBy: 'John Doe', totalHissa: 25 },
-    { id: 2, zone: 'South', area: 'Bangalore', submittedBy: 'Jane Smith', totalHissa: 18 },
-    { id: 3, zone: 'East', area: 'Kolkata', submittedBy: 'Robert Johnson', totalHissa: 32 },
-    { id: 4, zone: 'West', area: 'Delhi', submittedBy: 'Emily Davis', totalHissa: 14 },
-    { id: 5, zone: 'Central', area: 'Hyderabad', submittedBy: 'Michael Brown', totalHissa: 27 },
-    { id: 6, zone: 'North', area: 'Pune', submittedBy: 'Sarah Wilson', totalHissa: 19 },
-    { id: 7, zone: 'South', area: 'Chennai', submittedBy: 'David Taylor', totalHissa: 22 },
-    { id: 8, zone: 'East', area: 'Ahmedabad', submittedBy: 'Jessica Lee', totalHissa: 16 },
-    { id: 9, zone: 'West', area: 'Jaipur', submittedBy: 'Daniel Clark', totalHissa: 29 },
-    { id: 10, zone: 'Central', area: 'Lucknow', submittedBy: 'Lisa Walker', totalHissa: 21 },
-  ]);
-
+  const [receipts, setReceipts] = useState([]);
+  
   // Modal states
   const [showEyeModal, setShowEyeModal] = useState(false);
   const [showReceiptModal, setShowReceiptModal] = useState(false);
@@ -28,7 +17,7 @@ const DataTable = () => {
   const [selectedRowData, setSelectedRowData] = useState(null);
   
   // Receipt form states
-  const [amountPerShare, setAmountPerShare] = useState(4300);
+  const [amountPerShare, setAmountPerShare] = useState(Math.ceil(4000 / 7));
   const [howMuchPaying, setHowMuchPaying] = useState(0);
   const [paidBy, setPaidBy] = useState('');
   const [collectedBy, setCollectedBy] = useState('');
@@ -36,7 +25,13 @@ const DataTable = () => {
   const [formErrors, setFormErrors] = useState({});
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
-  const [userViewDetail, setUserViewDetail] = useState([]);
+  const [userViewDetail, setUserViewDetail] = useState(null);
+  
+  // Admin data state for cost per share
+  const [adminData, setAdminData] = useState({
+    m_a_cost: Math.ceil(4300 / 7),
+    oom_a_cost: Math.ceil(4000 / 7)
+  });
   
   // Transaction logs storage - key is the row ID, value is the array of transactions
   const [allTransactionLogs, setAllTransactionLogs] = useState({});
@@ -44,20 +39,103 @@ const DataTable = () => {
   // Current transaction log for the selected row
   const [currentTransactionLog, setCurrentTransactionLog] = useState([]);
   
-  // Dummy data for eye modal
-  const [recordsData] = useState([
-    { animalCount: 1, shareCount: 7, name: 'Shehna Khan', purpose: 'Qurbani', status: 'SENT' },
-    { animalCount: 1, shareCount: 7, name: 'Mehrunnisha Hamid pathan', purpose: 'Qurbani', status: 'SENT' },
-    { animalCount: 1, shareCount: 7, name: 'Rukhsana murtuza momin', purpose: 'Qurbani', status: 'SENT' },
-    { animalCount: 1, shareCount: 7, name: 'Irshad jahan shaikh', purpose: 'Qurbani', status: 'SENT' },
-    { animalCount: 1, shareCount: 7, name: 'Ashmat bee mehmood shaikh', purpose: 'Qurbani', status: 'SENT' },
-    { animalCount: 1, shareCount: 7, name: 'Parveen Abdul gafur khan', purpose: 'Qurbani', status: 'SENT' },
-    { animalCount: 1, shareCount: 7, name: 'Fatima Abdul fakir', purpose: 'Qurbani', status: 'SENT' },
-    { animalCount: 2, shareCount: 7, name: 'Mohammed shakeel shaikh', purpose: 'Qurbani', status: 'SENT' },
-    { animalCount: 2, shareCount: 7, name: 'Sayyed atique ur raham khaliqur Rahman', purpose: 'Qurbani', status: 'SENT' },
-  ]);
+  // Fetch admin data for cost per share
+  const fetchAdminData = async () => {
+    try {
+      const response = await axios.get('/api/superadmin', {
+        params: { name: 'superadmin', password: 'super123' }
+      });
+      if (response.data.success) {
+        setAdminData({
+          m_a_cost: Math.ceil(parseFloat(response.data.data.m_a_cost) / 7),
+          oom_a_cost: Math.ceil(parseFloat(response.data.data.oom_a_cost) / 7)
+        });
+        // Update amount per share with the oom_a_cost from admin data
+        setAmountPerShare(Math.ceil(parseFloat(response.data.data.oom_a_cost / 7)));
+      }
+    } catch (error) {
+      console.error('Error fetching admin data:', error);
+    }
+  };
 
-   // Fetch areas from API
+  const fetchReceipts = async () => {
+    try {
+      const response = await axios.get(`/api/receipt?user_id=6`);
+      setReceipts(response.data);
+      console.log(response.data)
+    } catch (err) {
+      console.error("Error fetching receipts:", err);
+    }
+  };
+
+  // Update payment status for multiple customers
+  const updatePaymentStatus = async (customerIds) => {
+    try {
+      const response = await axios.patch('/api/customers?bulk=true&type=payment_status', {
+        customer_ids: customerIds
+      });
+      
+      if (response.data.success) {
+        console.log(`Payment status updated for ${response.data.updated_count} customers`);
+        return true;
+      } else {
+        console.error('Failed to update payment status:', response.data.error);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error updating payment status:', error);
+      return false;
+    }
+  };
+
+  const createReceipt = async (receiptData) => {
+    try {
+      // Validate required fields - removing image_url from required fields
+      const requiredFields = [
+        'user_id', 'zone', 'area', 'purpose',
+        'paid_by', 'received_by', 'subtotal',
+        'net_total', 'rate', 'quantity'
+      ];
+      
+      // Check for missing fields
+      const missingFields = requiredFields.filter(field => {
+        return receiptData[field] === undefined || receiptData[field] === null || 
+               (typeof receiptData[field] === 'string' && receiptData[field].trim() === '');
+      });
+      
+      if (missingFields.length > 0) {
+        throw new Error(`Missing required fields: ${missingFields.join(', ')}`);
+      }
+      
+      // Ensure numeric fields are numbers, not strings
+      const numericFields = ['subtotal', 'net_total', 'rate', 'quantity'];
+      numericFields.forEach(field => {
+        if (typeof receiptData[field] === 'string') {
+          receiptData[field] = parseFloat(receiptData[field]);
+        }
+      });
+      
+      // Ensure user_id is a number
+      if (typeof receiptData.user_id === 'string') {
+        receiptData.user_id = parseInt(receiptData.user_id, 10);
+      }
+      
+      console.log('Sending receipt data:', JSON.stringify(receiptData));
+      
+      const response = await axios.post('/api/receipt', receiptData);
+      console.log('Receipt creation response:', response.data);
+      
+      // Refresh the receipts list after creation
+      await fetchReceipts();
+      return response.data;
+    } catch (err) {
+      console.error('Error creating receipt:', err);
+      const errorMsg = err.response?.data?.error || err.message;
+      throw new Error(errorMsg);
+    }
+  };
+
+  // Fetch areas from API
   const fetchAreas = async () => {
     try {
       const response = await axios.get('/api/areas');
@@ -65,7 +143,6 @@ const DataTable = () => {
     } catch (error) {
       console.error('Error fetching areas:', error);
       alert('Failed to fetch areas');
-    } finally {
     }
   };
 
@@ -77,83 +154,59 @@ const DataTable = () => {
     } catch (error) {
       console.error('Error fetching users:', error);
       alert('Failed to load users');
-    } finally {
     }
   };
 
   // Fetch Customers Data
   const fetchCustomerData = async () => {
-      const response = await axios.get('/api/customers?user_id=0');
-      setCustomerData(response.data);
-    };
+    const response = await axios.get('/api/customers?user_id=0');
+    setCustomerData(response.data);
+  };
 
-    useEffect(() => {
+  useEffect(() => {
+    fetchAreas();
+    fetchCustomerData();
+    fetchUsers();
+    fetchReceipts();
+    fetchAdminData(); // Fetch admin data on component mount
+    const interval = setInterval(() => {
       fetchAreas();
       fetchCustomerData();
       fetchUsers();
-      const interval = setInterval(() => {
-        fetchAreas();
-        fetchCustomerData();
-        fetchUsers();
-      }, 60000);
-      return () => clearInterval(interval);
-    }, []);
+      fetchReceipts();
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   // Helper function to round up to the nearest whole number
   const roundUp = (num) => {
     return Math.ceil(num);
   };
 
-  // Calculate derived values for receipt form
-  const calculateDerivedValues = (rowData, transactions, currentPayingShares) => {
-    if (!rowData) return { totalShares: 0, totalSharesPaid: 0, pendingShares: 0, totalAmount: 0, totalCollectedAmount: 0, currentPaidAmount: 0, balance: 0 };
-    
-    const totalShares = rowData.totalHissa;
-    
-    // Calculate total shares paid from transaction log
-    const totalSharesPaid = transactions.reduce((sum, transaction) => sum + transaction.shares, 0);
-    
-    // Calculate pending shares after current payment
-    const pendingShares = Math.max(0, totalShares - totalSharesPaid - currentPayingShares);
-    
-    // Calculate total amount (rounded up)
-    const totalAmount = roundUp(totalShares * amountPerShare);
-    
-    // Calculate paid amount for current transaction (rounded up)
-    const currentPaidAmount = roundUp(currentPayingShares * amountPerShare);
-    
-    // Calculate total amount collected so far (rounded up)
-    const totalCollectedAmount = transactions.reduce((sum, transaction) => sum + transaction.amount, 0);
-    
-    // Calculate balance (remaining amount to be collected) after current payment
-    const balance = Math.max(0, totalAmount - totalCollectedAmount - currentPaidAmount);
-    
-    return {
-      totalShares,
-      totalSharesPaid,
-      pendingShares,
-      totalAmount,
-      totalCollectedAmount,
-      currentPaidAmount,
-      balance
-    };
+  // Helper function to get zone name from area name - consistent across the component
+  const getZoneNameFromArea = (areaName) => {
+    if (!areaName) return 'N/A';
+    const matchedArea = areasList.find(area => area.area_name === areaName);
+    return matchedArea ? matchedArea.zone_name : 'Out Of Mumbai';
   };
-
-  // Get the derived values for the current state
-  const derivedValues = calculateDerivedValues(selectedRowData, currentTransactionLog, howMuchPaying);
 
   // Handle opening eye modal
   const handleEyeClick = (rowId, rowData, item) => {
+    console.log("Eye click - item:", item);
     setSelectedRowId(rowId);
     setSelectedRowData(rowData);
+    setUserViewDetail(item);
     setShowEyeModal(true);
-    setUserViewDetail(item)
   };
 
   // Handle opening receipt modal
-  const handleReceiptClick = (rowId, rowData) => {
+  const handleReceiptClick = (rowId, rowData, item) => {
+    console.log("Receipt click - item:", item);
+    fetchReceipts();
+    fetchAdminData(); // Refresh admin data when opening receipt modal
     setSelectedRowId(rowId);
     setSelectedRowData(rowData);
+    setUserViewDetail(item);
     
     // Get existing transactions for this row or initialize empty array
     const existingTransactions = allTransactionLogs[rowId] || [];
@@ -174,12 +227,14 @@ const DataTable = () => {
     setShowEyeModal(false);
     setSelectedRowId(null);
     setSelectedRowData(null);
+    setUserViewDetail(null);
   };
 
   const closeReceiptModal = () => {
     setShowReceiptModal(false);
     setSelectedRowId(null);
     setSelectedRowData(null);
+    setUserViewDetail(null);
     setCurrentTransactionLog([]);
     setFormErrors({});
   };
@@ -215,8 +270,17 @@ const DataTable = () => {
   const validateForm = () => {
     const errors = {};
     
+    // Calculate total shares, paid shares, and pending shares using the provided filtering logic
+    const totalShares = selectedRowData?.length || 0;
+    const sharesPaid = selectedRowData ? selectedRowData.filter(customer => customer.payment_status === 1).length : 0;
+    const pendingShares = totalShares - sharesPaid;
+    
     if (howMuchPaying <= 0) {
       errors.howMuchPaying = "Please enter a valid number of shares to pay for";
+    }
+    
+    if (howMuchPaying > pendingShares) {
+      errors.howMuchPaying = `Cannot exceed pending shares (${pendingShares})`;
     }
     
     if (!paidBy.trim()) {
@@ -236,45 +300,103 @@ const DataTable = () => {
   };
 
   // Handle form submission
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
       return;
     }
     
-    // Calculate the amount with rounding up
-    const amount = roundUp(howMuchPaying * amountPerShare);
-    
-    // Add new transaction to log
-    const newTransaction = {
-      date: new Date().toLocaleDateString('en-GB'),
-      shares: howMuchPaying,
-      amount: amount,
-      paidBy: paidBy,
-      collectedBy: collectedBy,
-      image: selectedImage
-    };
-    
-    // Update current transaction log
-    const updatedTransactionLog = [...currentTransactionLog, newTransaction];
-    setCurrentTransactionLog(updatedTransactionLog);
-    
-    // Update all transaction logs
-    setAllTransactionLogs({
-      ...allTransactionLogs,
-      [selectedRowId]: updatedTransactionLog
-    });
-    
-    // Reset form
-    setHowMuchPaying(0);
-    setPaidBy('');
-    setCollectedBy('');
-    setSelectedImage(null);
-    setFormErrors({});
-    
-    // Show success message
-    alert(`Payment of ${amount} INR for ${howMuchPaying} shares recorded successfully!`);
+    try {
+      // Calculate the amount with rounding up
+      const amount = roundUp(howMuchPaying * amountPerShare);
+      
+      // Get area directly from userViewDetail
+      const area = userViewDetail?.area_name;
+      
+      // Get zone directly from userViewDetail's area using areasList
+      const zone = getZoneNameFromArea(area);
+      
+      console.log("Receipt submission - userViewDetail:", userViewDetail);
+      console.log("Receipt submission - area:", area);
+      console.log("Receipt submission - zone:", zone);
+      
+      // Get current year for Qurbani purpose
+      const currentYear = new Date().getFullYear();
+      const purpose = `Qurbani (${currentYear})`;
+      
+      // Prepare receipt data - REMOVED image_url field
+      const receiptData = {
+        user_id: parseInt(userViewDetail?.user_id || 6, 10),
+        zone: zone,
+        area: area,
+        purpose: purpose,
+        paid_by: paidBy.trim(),
+        received_by: collectedBy.trim(),
+        subtotal: parseFloat(amount),
+        net_total: parseFloat(amount),
+        rate: parseFloat(amountPerShare),
+        quantity: parseInt(howMuchPaying, 10)
+      };
+      
+      console.log('Receipt data being sent:', receiptData);
+      
+      // Create receipt
+      await createReceipt(receiptData);
+      
+      // Add new transaction to log
+      const newTransaction = {
+        date: new Date().toLocaleDateString('en-GB'),
+        shares: howMuchPaying,
+        amount: amount,
+        paidBy: paidBy,
+        collectedBy: collectedBy,
+        image: selectedImage
+      };
+      
+      // Update current transaction log
+      const updatedTransactionLog = [...currentTransactionLog, newTransaction];
+      setCurrentTransactionLog(updatedTransactionLog);
+      
+      // Update all transaction logs
+      setAllTransactionLogs({
+        ...allTransactionLogs,
+        [selectedRowId]: updatedTransactionLog
+      });
+      
+      // Get the IDs of customers who haven't paid yet (payment_status === 0)
+      const unpaidCustomers = selectedRowData.filter(customer => customer.payment_status === 0);
+      
+      // Take only the number of customers being paid for (howMuchPaying)
+      const customersToUpdate = unpaidCustomers.slice(0, howMuchPaying);
+      
+      // Extract the IDs
+      const customerIdsToUpdate = customersToUpdate.map(customer => customer.id);
+      
+      // Update their payment status
+      if (customerIdsToUpdate.length > 0) {
+        const updated = await updatePaymentStatus(customerIdsToUpdate);
+        if (updated) {
+          console.log(`Successfully updated payment status for ${customerIdsToUpdate.length} customers`);
+          
+          // Refresh customer data to reflect the updated payment status
+          await fetchCustomerData();
+        }
+      }
+      
+      // Reset form
+      setHowMuchPaying(0);
+      setPaidBy('');
+      setCollectedBy('');
+      setSelectedImage(null);
+      setFormErrors({});
+      
+      // Show success message
+      alert(`Payment of ${amount} INR for ${howMuchPaying} shares recorded successfully!`);
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      alert(`Error: ${error.message}`);
+    }
   };
 
   const exportToExcel = () => {
@@ -294,7 +416,7 @@ const DataTable = () => {
         <div style={styles.header}>
           <div style={styles.headerContent}>
             <div style={styles.headerTitle}>
-              <h1 style={styles.h1}>Generate Receipt - Out of Mumbai</h1>
+              <h1 style={styles.h1}>Generate Receipt - Out Of Mumbai</h1>
             </div>
             
             <div style={styles.headerActions}>
@@ -324,7 +446,7 @@ const DataTable = () => {
           {/* Stats */}
           <div style={styles.stats}>
             <div style={styles.statsText}>
-              Total Records: <span style={styles.statsValue}>{data.length}</span>
+              Total Records: <span style={styles.statsValue}>{users.length}</span>
             </div>
           </div>
         </div>
@@ -348,7 +470,7 @@ const DataTable = () => {
          <div style={styles.tableBody}>
           {filteredData.length > 0 ? (
             filteredData.map((item, index) => {
-              // Filter customerData based on matching user_id
+              // Filter customerData based on matching user_id - CHANGED to "Out Of Mumbai"
               const userCustomerData = customerData.filter(customer => 
                 customer.user_id == item.user_id && customer.zone === "Out Of Mumbai" && customer.status === 1
               );
@@ -359,8 +481,7 @@ const DataTable = () => {
               const sharesPaid = userCustomerData.filter(customer => customer.payment_status === 1).length;
               
               // Find the zone_name from areasList based on matching area_name
-              const matchedArea = areasList.find(area => area.area_name === item.area_name);
-              const zoneName = matchedArea ? matchedArea.zone_name : 'N/A';
+              const zoneName = getZoneNameFromArea(item.area_name);
 
               return (
                 <div
@@ -401,7 +522,7 @@ const DataTable = () => {
                   <div style={{...styles.tableCell, ...styles.cellReceipt}}>
                     <button
                       style={{...styles.btn, ...styles.btnPrimary}}
-                      onClick={() => handleReceiptClick(item.id, item)}
+                      onClick={() => handleReceiptClick(item.id, userCustomerData, item)}
                     >
                       <FileTextIcon style={styles.btnIcon} />
                     </button>
@@ -444,12 +565,7 @@ const DataTable = () => {
             <div style={styles.recordDetails}>
               <div style={styles.recordItem}>
                 <span style={styles.recordLabel}>Zone:</span>
-                <span style={styles.recordValue}>{
-                  (() => {
-                    const matchedArea = areasList.find(area => area.area_name === userViewDetail?.area_name);
-                    return matchedArea ? matchedArea.zone_name : 'N/A';
-                  })()
-                }</span>
+                <span style={styles.recordValue}>{getZoneNameFromArea(userViewDetail?.area_name)}</span>
               </div>
               <div style={styles.recordItem}>
                 <span style={styles.recordLabel}>Area:</span>
@@ -529,257 +645,327 @@ const DataTable = () => {
         <div style={styles.modalOverlay}>
           <div style={styles.modalContent}>
             <div style={styles.modalHeader}>
-              <h2 style={styles.modalTitle}>Generate Receipt - ID: {selectedRowId}</h2>
+              <h2 style={styles.modalTitle}>Receipt Records</h2>
               <button style={styles.closeButton} onClick={closeReceiptModal}>×</button>
             </div>
             <div style={styles.modalBody}>
-              {/* Share Status Summary */}
-              <div style={styles.shareStatusContainer}>
-                <div style={styles.shareStatusHeader}>Share Status</div>
-                <div style={styles.shareStatusGrid}>
-                  <div style={styles.shareStatusItem}>
-                    <div style={styles.shareStatusLabel}>Total Shares</div>
-                    <div style={styles.shareStatusValue}>{derivedValues.totalShares}</div>
-                  </div>
-                  <div style={styles.shareStatusItem}>
-                    <div style={styles.shareStatusLabel}>Shares Paid</div>
-                    <div style={styles.shareStatusValue}>{derivedValues.totalSharesPaid}</div>
-                  </div>
-                  <div style={styles.shareStatusItem}>
-                    <div style={styles.shareStatusLabel}>Current Payment</div>
-                    <div style={styles.shareStatusValue}>{howMuchPaying}</div>
-                  </div>
-                  <div style={styles.shareStatusItem}>
-                    <div style={styles.shareStatusLabel}>Pending Shares</div>
-                    <div style={styles.shareStatusValue}>{derivedValues.pendingShares}</div>
-                  </div>
-                </div>
+              {/* Debug Info */}
+              <div style={{marginBottom: '1vw', padding: '0.5vw', backgroundColor: '#f0f9ff', borderRadius: '0.3vw'}}>
+                <div><strong>Area:</strong> {userViewDetail?.area_name || 'N/A'}</div>
+                <div><strong>Zone:</strong> {getZoneNameFromArea(userViewDetail?.area_name)}</div>
               </div>
               
-              {/* Financial Summary */}
-              <div style={styles.financialSummaryContainer}>
-                <div style={styles.financialSummaryHeader}>Financial Summary</div>
-                <div style={styles.financialSummaryGrid}>
-                  <div style={styles.financialSummaryItem}>
-                    <div style={styles.financialSummaryLabel}>Total Amount (INR)</div>
-                    <div style={styles.financialSummaryValue}>{derivedValues.totalAmount}</div>
+              {/* Form Section */}
+              <div style={styles.formSection}>
+                <h3 style={styles.sectionTitle}>Add New Receipt</h3>
+                <form onSubmit={handleFormSubmit}>
+                  <div style={styles.formGrid}>
+                    {/* Calculate values using the provided filtering logic */}
+                    {(() => {
+                      const totalShares = selectedRowData?.length || 0;
+                      const sharesPaid = selectedRowData ? selectedRowData.filter(customer => customer.payment_status === 1).length : 0;
+                      const pendingShares = totalShares - sharesPaid;
+                      const totalAmount = roundUp(totalShares * amountPerShare);
+                      const pendingAmount = roundUp(pendingShares * amountPerShare);
+                      const payingAmount = roundUp(howMuchPaying * amountPerShare);
+                      
+                      return (
+                        <>
+                          <div style={styles.formGroup}>
+                            <label style={styles.formLabel}>Total Shares</label>
+                            <input 
+                              type="text" 
+                              value={totalShares} 
+                              readOnly 
+                              style={styles.formInput} 
+                            />
+                          </div>
+                          
+                          <div style={styles.formGroup}>
+                            <label style={styles.formLabel}>Amount Per Share</label>
+                            <input 
+                              type="number" 
+                              value={amountPerShare} 
+                              readOnly
+                              style={styles.formInput} 
+                            />
+                          </div>
+                          
+                          <div style={styles.formGroup}>
+                            <label style={styles.formLabel}>Total Amount</label>
+                            <input 
+                              type="text" 
+                              value={totalAmount || 0} 
+                              readOnly 
+                              style={styles.formInput} 
+                            />
+                          </div>
+                          
+                          <div style={styles.formGroup}>
+                            <label style={styles.formLabel}>Paid Shares</label>
+                            <input 
+                              type="text" 
+                              value={sharesPaid || 0} 
+                              readOnly 
+                              style={styles.formInput} 
+                            />
+                          </div>
+                          
+                          <div style={styles.formGroup}>
+                            <label style={styles.formLabel}>Pending Shares</label>
+                            <input 
+                              type="text" 
+                              value={pendingShares || 0} 
+                              readOnly 
+                              style={styles.formInput} 
+                            />
+                          </div>
+                          
+                          <div style={styles.formGroup}>
+                            <label style={styles.formLabel}>Pending Amount</label>
+                            <input 
+                              type="text" 
+                              value={pendingAmount || 0} 
+                              readOnly 
+                              style={styles.formInput} 
+                            />
+                          </div>
+                          
+                          <div style={styles.formGroup}>
+                            <label style={styles.formLabel}>Paying Count <span style={styles.requiredField}>*</span></label>
+                            <input 
+                              type="number" 
+                              value={howMuchPaying} 
+                              onChange={(e) => {
+                                const value = Math.min(
+                                  pendingShares, 
+                                  Math.max(0, Number(e.target.value))
+                                );
+                                setHowMuchPaying(value);
+                                setFormErrors({...formErrors, howMuchPaying: null});
+                              }} 
+                              max={pendingShares}
+                              min={0}
+                              style={{
+                                ...styles.formInput,
+                                ...(formErrors.howMuchPaying ? styles.inputError : {}),
+                                ...(pendingShares <= 0 ? styles.inputDisabled : {})
+                              }} 
+                              disabled={pendingShares <= 0}
+                              required
+                            />
+                            {formErrors.howMuchPaying && (
+                              <div style={styles.errorMessage}>{formErrors.howMuchPaying}</div>
+                            )}
+                          </div>
+                          
+                          <div style={styles.formGroup}>
+                            <label style={styles.formLabel}>Paying Amount</label>
+                            <input 
+                              type="text" 
+                              value={payingAmount || 0} 
+                              readOnly 
+                              style={styles.formInput} 
+                            />
+                          </div>
+                        </>
+                      );
+                    })()}
+                    
+                    <div style={styles.formGroup}>
+                      <label style={styles.formLabel}>Paid By <span style={styles.requiredField}>*</span></label>
+                      <input 
+                        type="text" 
+                        value={paidBy} 
+                        onChange={(e) => {
+                          setPaidBy(e.target.value);
+                          setFormErrors({...formErrors, paidBy: null});
+                        }} 
+                        style={{
+                          ...styles.formInput,
+                          ...(formErrors.paidBy ? styles.inputError : {})
+                        }} 
+                        required
+                      />
+                      {formErrors.paidBy && (
+                        <div style={styles.errorMessage}>{formErrors.paidBy}</div>
+                      )}
+                    </div>
+                    
+                    <div style={styles.formGroup}>
+                      <label style={styles.formLabel}>Collected By <span style={styles.requiredField}>*</span></label>
+                      <input 
+                        type="text" 
+                        value={collectedBy} 
+                        onChange={(e) => {
+                          setCollectedBy(e.target.value);
+                          setFormErrors({...formErrors, collectedBy: null});
+                        }} 
+                        style={{
+                          ...styles.formInput,
+                          ...(formErrors.collectedBy ? styles.inputError : {})
+                        }} 
+                        required
+                      />
+                      {formErrors.collectedBy && (
+                        <div style={styles.errorMessage}>{formErrors.collectedBy}</div>
+                      )}
+                    </div>
                   </div>
-                  <div style={styles.financialSummaryItem}>
-                    <div style={styles.financialSummaryLabel}>Amount Collected (INR)</div>
-                    <div style={styles.financialSummaryValue}>{derivedValues.totalCollectedAmount}</div>
+                  
+                  <div style={styles.imageUploadSection}>
+                    <div style={{
+                      ...styles.imagePreview,
+                      ...(formErrors.image ? styles.imagePreviewError : {})
+                    }}>
+                      {selectedImage ? (
+                        <img src={selectedImage} alt="Selected" style={styles.previewImage} />
+                      ) : (
+                        <div style={styles.placeholderImage}>
+                          <CameraIcon style={styles.cameraIconLarge} />
+                          <div style={styles.imageRequiredText}>
+                            Image Required <span style={styles.requiredField}>*</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div style={styles.imageActions}>
+                      {formErrors.image && (
+                        <div style={styles.errorMessage}>{formErrors.image}</div>
+                      )}
+                      
+                      {/* File upload input */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        style={{ display: 'none' }}
+                        ref={fileInputRef}
+                      />
+                      
+                      {/* Camera capture input */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        style={{ display: 'none' }}
+                        ref={cameraInputRef}
+                        capture="environment"
+                      />
+                      
+                      <button 
+                        type="button" 
+                        onClick={handleFileUpload} 
+                        style={styles.imageButton}
+                      >
+                        <UploadIcon style={styles.btnIcon} />
+                        Upload Image
+                      </button>
+                      
+                      <button 
+                        type="button" 
+                        onClick={handleCameraCapture} 
+                        style={styles.cameraButton}
+                      >
+                        <CameraIcon style={styles.btnIcon} />
+                        Take Photo
+                      </button>
+                    </div>
                   </div>
-                  <div style={styles.financialSummaryItem}>
-                    <div style={styles.financialSummaryLabel}>Current Payment (INR)</div>
-                    <div style={styles.financialSummaryValue}>{derivedValues.currentPaidAmount}</div>
+                  
+                  <div style={styles.formActions}>
+                    {(() => {
+                      const pendingShares = selectedRowData ? 
+                        (selectedRowData.length - selectedRowData.filter(customer => customer.payment_status === 1).length) : 0;
+                      
+                      return (
+                        <button 
+                          type="submit" 
+                          style={{
+                            ...styles.submitButton,
+                            ...(pendingShares <= 0 ? styles.btnDisabled : {})
+                          }}
+                          disabled={pendingShares <= 0}
+                        >
+                          Submit Payment
+                        </button>
+                      );
+                    })()}
                   </div>
-                  <div style={styles.financialSummaryItem}>
-                    <div style={styles.financialSummaryLabel}>Balance (INR)</div>
-                    <div style={styles.financialSummaryValue}>{derivedValues.balance}</div>
-                  </div>
-                </div>
+                </form>
               </div>
               
-              <form onSubmit={handleFormSubmit} style={styles.receiptForm}>
-                <div style={styles.formGrid}>
-                  <div style={styles.formGroup}>
-                    <label style={styles.formLabel}>TOTAL SHARES</label>
-                    <input 
-                      type="text" 
-                      value={derivedValues.totalShares} 
-                      readOnly 
-                      style={styles.formInput} 
-                    />
-                  </div>
-                  
-                  <div style={styles.formGroup}>
-                    <label style={styles.formLabel}>Amount Per Share(Admin)</label>
-                    <input 
-                      type="number" 
-                      value={amountPerShare} 
-                      onChange={(e) => setAmountPerShare(Number(e.target.value))} 
-                      style={styles.formInput} 
-                    />
-                  </div>
-                  
-                  <div style={styles.formGroup}>
-                    <label style={styles.formLabel}>How much paying? <span style={styles.requiredField}>*</span></label>
-                    <input 
-                      type="number" 
-                      value={howMuchPaying} 
-                      onChange={(e) => {
-                        const value = Math.min(
-                          derivedValues.totalShares - derivedValues.totalSharesPaid, 
-                          Math.max(0, Number(e.target.value))
-                        );
-                        setHowMuchPaying(value);
-                        setFormErrors({...formErrors, howMuchPaying: null});
-                      }} 
-                      max={derivedValues.totalShares - derivedValues.totalSharesPaid}
-                      min={0}
-                      style={{
-                        ...styles.formInput,
-                        ...(formErrors.howMuchPaying ? styles.inputError : {}),
-                        ...(derivedValues.totalShares - derivedValues.totalSharesPaid <= 0 ? styles.inputDisabled : {})
-                      }} 
-                      disabled={derivedValues.totalShares - derivedValues.totalSharesPaid <= 0}
-                      required
-                    />
-                    {formErrors.howMuchPaying && (
-                      <div style={styles.errorMessage}>{formErrors.howMuchPaying}</div>
-                    )}
-                    <span style={styles.formHint}>
-                      {derivedValues.totalShares - derivedValues.totalSharesPaid > 0 
-                        ? `Maximum available: ${derivedValues.totalShares - derivedValues.totalSharesPaid} shares` 
-                        : "No shares available for payment"}
-                    </span>
-                  </div>
-                  
-                  <div style={styles.formGroup}>
-                    <label style={styles.formLabel}>TOTAL AMOUNT</label>
-                    <input 
-                      type="text" 
-                      value={derivedValues.totalAmount} 
-                      readOnly 
-                      style={styles.formInput} 
-                    />
-                  </div>
-                  
-                  <div style={styles.formGroup}>
-                    <label style={styles.formLabel}>PAID AMOUNT</label>
-                    <input 
-                      type="text" 
-                      value={derivedValues.currentPaidAmount || 0} 
-                      readOnly 
-                      style={styles.formInput} 
-                    />
-                  </div>
-                  
-                  <div style={styles.formGroup}>
-                    <label style={styles.formLabel}>Balance</label>
-                    <input 
-                      type="text" 
-                      value={derivedValues.balance || 0} 
-                      readOnly 
-                      style={styles.formInput} 
-                    />
-                  </div>
-                  
-                  <div style={styles.formGroup}>
-                    <label style={styles.formLabel}>PAID BY <span style={styles.requiredField}>*</span></label>
-                    <input 
-                      type="text" 
-                      value={paidBy} 
-                      onChange={(e) => {
-                        setPaidBy(e.target.value);
-                        setFormErrors({...formErrors, paidBy: null});
-                      }} 
-                      style={{
-                        ...styles.formInput,
-                        ...(formErrors.paidBy ? styles.inputError : {})
-                      }} 
-                      required
-                    />
-                    {formErrors.paidBy && (
-                      <div style={styles.errorMessage}>{formErrors.paidBy}</div>
-                    )}
-                  </div>
-                  
-                  <div style={styles.formGroup}>
-                    <label style={styles.formLabel}>COLLECTED BY <span style={styles.requiredField}>*</span></label>
-                    <input 
-                      type="text" 
-                      value={collectedBy} 
-                      onChange={(e) => {
-                        setCollectedBy(e.target.value);
-                        setFormErrors({...formErrors, collectedBy: null});
-                      }} 
-                      style={{
-                        ...styles.formInput,
-                        ...(formErrors.collectedBy ? styles.inputError : {})
-                      }} 
-                      required
-                    />
-                    {formErrors.collectedBy && (
-                      <div style={styles.errorMessage}>{formErrors.collectedBy}</div>
-                    )}
+              {/* Excel-like Table for Receipt Records */}
+              <div style={styles.receiptTableContainer}>
+                {/* Fixed Header */}
+                <div style={styles.receiptTableHeader}>
+                  <div style={styles.receiptTableRow}>
+                    <div style={styles.receiptTableHeaderCell}>ID</div>
+                    <div style={styles.receiptTableHeaderCell}>Zone</div>
+                    <div style={styles.receiptTableHeaderCell}>Area</div>
+                    <div style={styles.receiptTableHeaderCell}>Purpose</div>
+                    <div style={styles.receiptTableHeaderCell}>Paid By</div>
+                    <div style={styles.receiptTableHeaderCell}>Received By</div>
+                    <div style={styles.receiptTableHeaderCell}>Subtotal</div>
+                    <div style={styles.receiptTableHeaderCell}>Net Total</div>
+                    <div style={styles.receiptTableHeaderCell}>Rate</div>
+                    <div style={styles.receiptTableHeaderCell}>Quantity</div>
+                    <div style={styles.receiptTableHeaderCell}>Created Date</div>
                   </div>
                 </div>
                 
-                <div style={styles.imageUploadSection}>
-                  <div style={{
-                    ...styles.imagePreview,
-                    ...(formErrors.image ? styles.imagePreviewError : {})
-                  }}>
-                    {selectedImage ? (
-                      <img src={selectedImage} alt="Selected" style={styles.previewImage} />
-                    ) : (
-                      <div style={styles.placeholderImage}>
-                        <CameraIcon style={styles.cameraIconLarge} />
-                        <div style={styles.imageRequiredText}>
-                          Image Required <span style={styles.requiredField}>*</span>
+                {/* Scrollable Body */}
+                <div style={styles.receiptTableBody} className="tableBody">
+                  {receipts && receipts.length > 0 ? (
+                    receipts.map((receipt, index) => (
+                      <div key={index} style={styles.receiptTableRow}>
+                        <div style={styles.receiptTableCell}>{receipt.id}</div>
+                        <div style={styles.receiptTableCell}>{receipt.zone}</div>
+                        <div style={styles.receiptTableCell}>{receipt.area}</div>
+                        <div style={styles.receiptTableCell}>{receipt.purpose}</div>
+                        <div style={styles.receiptTableCell}>{receipt.paid_by}</div>
+                        <div style={styles.receiptTableCell}>{receipt.received_by}</div>
+                        <div style={styles.receiptTableCell}>{receipt.subtotal}</div>
+                        <div style={styles.receiptTableCell}>{receipt.net_total}</div>
+                        <div style={styles.receiptTableCell}>{receipt.rate}</div>
+                        <div style={styles.receiptTableCell}>{receipt.quantity}</div>
+                        <div style={styles.receiptTableCell}>
+                          {new Date(receipt.created_at).toLocaleString()}
                         </div>
                       </div>
-                    )}
-                  </div>
-                  
-                  {formErrors.image && (
-                    <div style={styles.errorMessage}>{formErrors.image}</div>
+                    ))
+                  ) : (
+                    <div style={styles.noData}>No receipt records found</div>
                   )}
-                  
-                  <div style={styles.imageActions}>
-                    {/* File upload input */}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageSelect}
-                      style={{ display: 'none' }}
-                      ref={fileInputRef}
-                    />
-                    
-                    {/* Camera capture input */}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleImageSelect}
-                      style={{ display: 'none' }}
-                      ref={cameraInputRef}
-                      capture="environment"
-                    />
-                    
-                    <button 
-                      type="button" 
-                      onClick={handleFileUpload} 
-                      style={styles.imageButton}
-                    >
-                      <UploadIcon style={styles.btnIcon} />
-                      <span style={styles.buttonText}>Upload Image</span>
-                    </button>
-                    
-                    <button 
-                      type="button" 
-                      onClick={handleCameraCapture} 
-                      style={styles.cameraButton}
-                    >
-                      <CameraIcon style={styles.btnIcon} />
-                      <span style={styles.buttonText}>Take Photo</span>
-                    </button>
-                  </div>
                 </div>
                 
-                <div style={styles.formActions}>
-                  <button 
-                    type="submit" 
-                    style={{
-                      ...styles.submitButton,
-                      ...(derivedValues.totalShares - derivedValues.totalSharesPaid <= 0 ? styles.btnDisabled : {})
-                    }}
-                    disabled={derivedValues.totalShares - derivedValues.totalSharesPaid <= 0}
-                  >
-                    Submit Payment
-                  </button>
+                {/* Fixed Footer with Totals */}
+                <div style={styles.receiptTableFooter}>
+                  <div style={styles.receiptTableRow}>
+                    <div style={styles.receiptTableFooterCell} colSpan="6">Totals:</div>
+                    <div style={styles.receiptTableFooterCell}>
+                      {receipts && receipts.length > 0 
+                        ? receipts.reduce((sum, receipt) => sum + parseFloat(receipt.subtotal || 0), 0).toFixed(2) 
+                        : '0.00'}
+                    </div>
+                    <div style={styles.receiptTableFooterCell}>
+                      {receipts && receipts.length > 0 
+                        ? receipts.reduce((sum, receipt) => sum + parseFloat(receipt.net_total || 0), 0).toFixed(2) 
+                        : '0.00'}
+                    </div>
+                    <div style={styles.receiptTableFooterCell}>-</div>
+                    <div style={styles.receiptTableFooterCell}>
+                      {receipts && receipts.length > 0 
+                        ? receipts.reduce((sum, receipt) => sum + parseFloat(receipt.quantity || 0), 0).toFixed(2) 
+                        : '0.00'}
+                    </div>
+                    <div style={styles.receiptTableFooterCell}>Records: {receipts?.length || 0}</div>
+                  </div>
                 </div>
-              </form>
+              </div>
               
+              {/* Transaction History */}
               {currentTransactionLog.length > 0 && (
                 <div style={styles.transactionLogSection}>
                   <h3 style={styles.sectionTitle}>Transaction History</h3>
@@ -811,67 +997,28 @@ const DataTable = () => {
           </div>
         </div>
       )}
-      
-      <style jsx global>{`
-        .data-row:hover {
-          background-color: #f8fafc;
-          transition: background-color 0.2s ease;
-        }
-        
-        input::placeholder {
-          color: rgba(255, 255, 255, 0.7);
-        }
-        
-        input:focus {
-          outline: none;
-          background-color: rgba(255, 255, 255, 0.3) !important;
-          border-color: rgba(255, 255, 255, 0.5) !important;
-        }
-        
-        button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .table-body::-webkit-scrollbar {
-          width: 0.5vw;
-        }
-        
-        .table-body::-webkit-scrollbar-track {
-          background: #f1f5f9;
-        }
-        
-        .table-body::-webkit-scrollbar-thumb {
-          background-color: #cbd5e1;
-          border-radius: 1vw;
-        }
-        
-        .table-body::-webkit-scrollbar-thumb:hover {
-          background-color: #94a3b8;
-        }
-      `}</style>
     </div>
   );
 };
 
-// Icons components
-const SearchIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+// Icons
+const SearchIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <circle cx="11" cy="11" r="8"></circle>
     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
   </svg>
 );
 
-const DownloadIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const DownloadIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
     <polyline points="7 10 12 15 17 10"></polyline>
     <line x1="12" y1="15" x2="12" y2="3"></line>
   </svg>
 );
 
-const FileTextIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const FileTextIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
     <polyline points="14 2 14 8 20 8"></polyline>
     <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -880,44 +1027,38 @@ const FileTextIcon = ({ style }) => (
   </svg>
 );
 
-const EyeIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const EyeIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
     <circle cx="12" cy="12" r="3"></circle>
   </svg>
 );
 
-const CameraIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const CameraIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
     <circle cx="12" cy="13" r="4"></circle>
   </svg>
 );
 
-const UploadIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const UploadIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
     <polyline points="17 8 12 3 7 8"></polyline>
     <line x1="12" y1="3" x2="12" y2="15"></line>
   </svg>
 );
 
+// Styles
 const styles = {
   container: {
-    height: '100%',
-    backgroundColor: '#f1f5f9',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '.5vw'
+    padding: '1vw',
+    fontFamily: 'Arial, sans-serif',
   },
   card: {
-    backgroundColor: 'white',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1)',
-    border: '1px solid #e2e8f0',
+    backgroundColor: '#fff',
+    boxShadow: '0 0.2vw 0.5vw rgba(0, 0, 0, 0.1)',
     overflow: 'hidden',
-    width: '100%',
-    height: "100%"
   },
   header: {
     background: '#046307',
@@ -1002,222 +1143,185 @@ const styles = {
     opacity: 1,
   },
   tableContainer: {
-    overflow: 'hidden',
+    overflowX: 'auto',
   },
   tableHeader: {
-    backgroundColor: '#f8fafc',
-    borderBottom: '1px solid #e2e8f0',
+    backgroundColor: '#f7fafc',
+    borderBottom: '0.1vw solid #edf2f7',
   },
   tableRow: {
-    display: 'grid',
-    gridTemplateColumns: '0.5fr 1fr 1.5fr 1.5fr 1fr 0.5fr 0.5fr',
-    gap: '1vw',
-    padding: '0 2vw',
+    display: 'flex',
+    borderBottom: '0.1vw solid #edf2f7',
   },
   headerCell: {
-    paddingTop: '1.2vw',
-    paddingBottom: '1.2vw',
-    fontSize: '1vw',
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    color: '#475569',
+    fontWeight: '600',
+    color: '#4a5568',
+    fontSize: '0.9vw',
   },
   tableCell: {
+    padding: '1.2vw 1.5vw',
     display: 'flex',
     alignItems: 'center',
+    fontSize: '1vw',
+    color: '#4a5568',
+  },
+  cellId: {
+    flex: '0 0 5%',
+  },
+  cellZone: {
+    flex: '0 0 15%',
+  },
+  cellArea: {
+    flex: '0 0 20%',
+  },
+  cellSubmitted: {
+    flex: '0 0 25%',
+  },
+  cellHissa: {
+    flex: '0 0 15%',
+    display: 'flex',
     justifyContent: 'center'
   },
+  cellReceipt: {
+    flex: '0 0 10%',
+    justifyContent: 'center',
+  },
+  cellActions: {
+    flex: '0 0 10%',
+    justifyContent: 'center',
+  },
   tableBody: {
-    maxHeight: '70vh',
+    maxHeight: '50vh',
     overflowY: 'auto',
   },
   dataRow: {
-    display: 'grid',
-    gridTemplateColumns: '0.5fr 1fr 1.5fr 1.5fr 1fr 0.5fr 0.5fr',
-    gap: '1vw',
-    padding: '1vw 2vw',
-    borderBottom: '1px solid #e2e8f0',
-    transition: 'all 0.2s ease',
+    display: 'flex',
+    borderBottom: '0.1vw solid #edf2f7',
+    transition: 'background-color 0.2s',
+    cursor: 'pointer',
   },
-  cellId: {},
-  cellZone: {},
-  cellArea: {},
-  cellSubmitted: {},
-  cellHissa: {},
-  cellReceipt: {},
-  cellActions: {},
   idText: {
-    fontSize: '1vw',
-    fontWeight: 700,
-    color: '#046307',
+    fontWeight: '600',
+    color: '#2d3748',
   },
   zoneText: {
-    fontSize: '1vw',
-    fontWeight: 500,
+    color: '#4a5568',
   },
   areaText: {
-    fontSize: '1vw',
+    color: '#4a5568',
   },
   submittedText: {
-    fontSize: '1vw',
-    fontWeight: 500,
+    color: '#4a5568',
   },
   hissaContainer: {
     display: 'flex',
-    flexDirection: 'column',
     alignItems: 'center',
-    gap: '0.3vw',
   },
   hissaBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
+    backgroundColor: '#ebf8ff',
+    color: '#3182ce',
     padding: '0.3vw 0.8vw',
-    backgroundColor: 'rgba(4, 99, 7, 0.1)',
-    color: '#046307',
-    fontWeight: 500,
-    borderRadius: '2vw',
-    fontSize: '1vw',
-  },
-  hissaStatus: {
-    fontSize: '0.8vw',
-    color: '#64748b',
+    borderRadius: '0.3vw',
+    fontSize: '0.9vw',
+    fontWeight: '600',
   },
   btn: {
-    width: '2.2vw',
-    height: '2.2vw',
-    borderRadius: '0.5vw',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    border: 'none',
-    cursor: 'pointer',
-    transition: 'all 0.2s ease',
-  },
-  btnPrimary: {
-    backgroundColor: '#046307',
-    color: 'white',
-  },
-  btnSecondary: {
-    backgroundColor: '#f1f5f9',
-    color: '#475569',
-  },
-  btnDisabled: {
-    backgroundColor: '#94a3b8',
-    color: '#e2e8f0',
-    cursor: 'not-allowed',
-    opacity: 0.7,
-    transform: 'none !important',
-    boxShadow: 'none !important',
-  },
-  inputDisabled: {
-    backgroundColor: '#f1f5f9',
-    color: '#94a3b8',
-    cursor: 'not-allowed',
-  },
-  emptyState: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '6vw 0',
-    textAlign: 'center',
-  },
-  emptyIcon: {
-    width: '4vw',
-    height: '4vw',
-    backgroundColor: '#f1f5f9',
-    borderRadius: '50%',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: '1vw',
-  },
-  emptyIconSvg: {
-    width: '2vw',
-    height: '2vw',
-    color: '#94a3b8',
-  },
-  emptyTitle: {
-    fontSize: '1.2vw',
-    fontWeight: 600,
-    color: '#1e293b',
-    marginBottom: '0.5vw',
-  },
-  emptyText: {
-    fontSize: '0.9vw',
-    color: '#475569',
-  },
-  
-  // Modal styles
-  modalOverlay: {
-    position: 'fixed',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: '0.5vw',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.08)',
-    width: '80%',
-    maxWidth: '1200px',
-    maxHeight: '90vh',
-    overflow: 'auto',
-    position: 'relative',
-  },
-  modalHeader: {
-    padding: '1.5vw',
-    borderBottom: '1px solid #e2e8f0',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    position: 'sticky',
-    top: 0,
-    backgroundColor: 'white',
-    zIndex: 1,
-  },
-  modalTitle: {
-    fontSize: '1.5vw',
-    fontWeight: 600,
-    color: '#1e293b',
-    margin: 0,
-  },
-  closeButton: {
-    background: 'none',
-    border: 'none',
-    fontSize: '2vw',
-    fontWeight: 300,
-    color: '#64748b',
-    cursor: 'pointer',
-    padding: '0.5vw',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     width: '2.5vw',
     height: '2.5vw',
-    borderRadius: '50%',
-    transition: 'all 0.2s ease',
+    borderRadius: '0.5vw',
+    border: 'none',
+    cursor: 'pointer',
+    transition: 'background-color 0.2s',
+  },
+  btnPrimary: {
+    backgroundColor: '#ebf8ff',
+    color: '#3182ce',
+  },
+  btnSecondary: {
+    backgroundColor: '#f0fff4',
+    color: '#38a169',
+  },
+  emptyState: {
+    padding: '4vw 0',
+    textAlign: 'center',
+  },
+  emptyIcon: {
+    display: 'flex',
+    justifyContent: 'center',
+    marginBottom: '1vw',
+  },
+  emptyIconSvg: {
+    width: '3vw',
+    height: '3vw',
+    color: '#a0aec0',
+  },
+  emptyTitle: {
+    fontSize: '1.2vw',
+    fontWeight: '600',
+    color: '#4a5568',
+    margin: '0 0 0.5vw 0',
+  },
+  emptyText: {
+    fontSize: '1vw',
+    color: '#718096',
+    margin: '0',
+  },
+  modalOverlay: {
+    position: 'fixed',
+    top: '0',
+    left: '0',
+    right: '0',
+    bottom: '0',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: '1000',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: '0.8vw',
+    width: '80vw',
+    maxWidth: '1200px',
+    maxHeight: '90vh',
+    overflow: 'hidden',
+    boxShadow: '0 0.5vw 1vw rgba(0, 0, 0, 0.1)',
+  },
+  modalHeader: {
+    padding: '1.5vw 2vw',
+    borderBottom: '0.1vw solid #edf2f7',
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: '1.5vw',
+    fontWeight: '600',
+    color: '#1a202c',
+    margin: '0',
+  },
+  closeButton: {
+    background: 'none',
+    border: 'none',
+    fontSize: '2vw',
+    color: '#a0aec0',
+    cursor: 'pointer',
+    padding: '0',
+    lineHeight: '1',
   },
   modalBody: {
-    padding: '1.5vw',
+    padding: '2vw',
+    maxHeight: 'calc(90vh - 5vw)',
+    overflowY: 'auto',
   },
-  
-  // Eye modal specific styles
   recordDetails: {
     display: 'grid',
     gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '1vw',
+    gap: '1.5vw',
     marginBottom: '2vw',
-    padding: '1vw',
-    backgroundColor: '#f8fafc',
-    borderRadius: '0.5vw',
   },
   recordItem: {
     display: 'flex',
@@ -1226,132 +1330,47 @@ const styles = {
   },
   recordLabel: {
     fontSize: '0.9vw',
-    color: '#64748b',
-    fontWeight: 500,
+    color: '#718096',
+    fontWeight: '500',
   },
   recordValue: {
     fontSize: '1.1vw',
-    color: '#1e293b',
-    fontWeight: 600,
+    color: '#2d3748',
+    fontWeight: '600',
   },
   recordTable: {
-    border: '1px solid #e2e8f0',
+    border: '0.1vw solid #edf2f7',
     borderRadius: '0.5vw',
     overflow: 'hidden',
   },
   recordTableHeader: {
-    backgroundColor: '#f8fafc',
-    borderBottom: '1px solid #e2e8f0',
+    backgroundColor: '#f7fafc',
+    borderBottom: '0.1vw solid #edf2f7',
   },
   recordTableRow: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 2fr 1.5fr 1fr',
-    gap: '1vw',
-    padding: '1vw',
-    borderBottom: '1px solid #e2e8f0',
+    gridTemplateColumns: '1fr 1fr 2fr 1fr 1fr',
+    borderBottom: '0.1vw solid #edf2f7',
   },
   recordTableCell: {
+    padding: '1vw',
     fontSize: '1vw',
+    color: '#4a5568',
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center'
   },
   recordTableBody: {
-    maxHeight: '50vh',
+    maxHeight: '30vh',
     overflowY: 'auto',
   },
-  
-  // Receipt modal specific styles
-  shareStatusContainer: {
-    marginBottom: '2vw',
-    border: '1px solid #e2e8f0',
-    borderRadius: '0.5vw',
-    overflow: 'hidden',
+  formSection: {
+    marginBottom: '3vw',
   },
-  shareStatusHeader: {
-    backgroundColor: '#046307',
-    color: 'white',
-    padding: '0.8vw 1.5vw',
+  sectionTitle: {
     fontSize: '1.2vw',
-    fontWeight: 600,
-  },
-  shareStatusGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '1vw',
-    padding: '1.5vw',
-    backgroundColor: '#f8fafc',
-  },
-  shareStatusItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '0.5vw',
-  },
-  shareStatusLabel: {
-    fontSize: '0.9vw',
-    color: '#64748b',
-    fontWeight: 500,
-  },
-  shareStatusValue: {
-    fontSize: '1.5vw',
-    color: '#1e293b',
-    fontWeight: 700,
-  },
-  
-  financialSummaryContainer: {
-    marginBottom: '2vw',
-    border: '1px solid #e2e8f0',
-    borderRadius: '0.5vw',
-    overflow: 'hidden',
-  },
-  financialSummaryHeader: {
-    backgroundColor: '#046307',
-    color: 'white',
-    padding: '0.8vw 1.5vw',
-    fontSize: '1.2vw',
-    fontWeight: 600,
-  },
-  financialSummaryGrid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '1vw',
-    padding: '1.5vw',
-    backgroundColor: '#f8fafc',
-  },
-  financialSummaryItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '0.5vw',
-  },
-  financialSummaryLabel: {
-    fontSize: '0.9vw',
-    color: '#64748b',
-    fontWeight: 500,
-  },
-  financialSummaryValue: {
-    fontSize: '1.5vw',
-    color: '#1e293b',
-    fontWeight: 700,
-  },
-  
-  receiptSummary: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5vw',
-    marginBottom: '2vw',
-    padding: '1vw',
-    backgroundColor: '#f8fafc',
-    borderRadius: '0.5vw',
-  },
-  receiptSummaryItem: {
-    fontSize: '1vw',
-    color: '#1e293b',
-    fontWeight: 500,
-  },
-  receiptForm: {
-    marginBottom: '2vw',
+    fontWeight: '600',
+    color: '#2d3748',
+    marginBottom: '1.5vw',
   },
   formGrid: {
     display: 'grid',
@@ -1365,57 +1384,51 @@ const styles = {
     gap: '0.5vw',
   },
   formLabel: {
-    fontSize: '0.9vw',
-    color: '#64748b',
-    fontWeight: 500,
+    fontSize: '1vw',
+    color: '#4a5568',
+    fontWeight: '500',
   },
   formInput: {
     padding: '0.8vw 1vw',
-    border: '1px solid #e2e8f0',
-    borderRadius: '0.4vw',
+    borderRadius: '0.5vw',
+    border: '0.1vw solid #e2e8f0',
     fontSize: '1vw',
-    color: '#1e293b',
-    backgroundColor: '#ffffff',
-    transition: 'all 0.2s ease',
+    outline: 'none',
+    transition: 'border-color 0.2s',
   },
-  formHint: {
-    fontSize: '0.8vw',
-    color: '#64748b',
+  inputError: {
+    borderColor: '#e53e3e',
+  },
+  inputDisabled: {
+    backgroundColor: '#f7fafc',
+    color: '#a0aec0',
+    cursor: 'not-allowed',
+  },
+  errorMessage: {
+    color: '#e53e3e',
+    fontSize: '0.9vw',
     marginTop: '0.3vw',
   },
   requiredField: {
-    color: '#e11d48',
-    fontWeight: 'bold',
-  },
-  inputError: {
-    border: '1px solid #e11d48',
-    backgroundColor: 'rgba(225, 29, 72, 0.05)',
-  },
-  errorMessage: {
-    color: '#e11d48',
-    fontSize: '0.8vw',
-    marginTop: '0.3vw',
+    color: '#e53e3e',
   },
   imageUploadSection: {
     display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '1vw',
+    gap: '2vw',
     marginBottom: '2vw',
   },
   imagePreview: {
     width: '15vw',
     height: '15vw',
-    border: '2px dashed #e2e8f0',
+    border: '0.1vw solid #e2e8f0',
     borderRadius: '0.5vw',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     overflow: 'hidden',
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   imagePreviewError: {
-    border: '2px dashed #e11d48',
-    backgroundColor: 'rgba(225, 29, 72, 0.05)',
+    borderColor: '#e53e3e',
   },
   previewImage: {
     width: '100%',
@@ -1426,103 +1439,145 @@ const styles = {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    justifyContent: 'center',
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#f8fafc',
     gap: '1vw',
-  },
-  imageRequiredText: {
-    fontSize: '0.9vw',
-    color: '#64748b',
+    color: '#a0aec0',
   },
   cameraIconLarge: {
     width: '3vw',
     height: '3vw',
-    color: '#94a3b8',
+  },
+  imageRequiredText: {
+    fontSize: '1vw',
+    fontWeight: '500',
   },
   imageActions: {
+    flex: '1',
     display: 'flex',
+    flexDirection: 'column',
+    justifyContent: 'center',
     gap: '1vw',
   },
   imageButton: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: '0.5vw',
     padding: '0.8vw 1.5vw',
-    backgroundColor: '#f1f5f9',
-    color: '#475569',
-    borderRadius: '0.4vw',
+    backgroundColor: '#edf2f7',
+    color: '#4a5568',
     border: 'none',
+    borderRadius: '0.5vw',
+    fontSize: '1vw',
+    fontWeight: '500',
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
+    transition: 'background-color 0.2s',
+    marginRight: '1vw',
   },
   cameraButton: {
     display: 'flex',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: '0.5vw',
     padding: '0.8vw 1.5vw',
-    backgroundColor: '#046307',
-    color: 'white',
-    borderRadius: '0.4vw',
+    backgroundColor: '#edf2f7',
+    color: '#4a5568',
     border: 'none',
+    borderRadius: '0.5vw',
+    fontSize: '1vw',
+    fontWeight: '500',
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
-  },
-  buttonText: {
-    fontSize: '0.9vw',
-    fontWeight: 500,
+    transition: 'background-color 0.2s',
   },
   formActions: {
     display: 'flex',
-    justifyContent: 'center',
-    marginTop: '2vw',
+    justifyContent: 'flex-end',
   },
   submitButton: {
-    padding: '0.8vw 2vw',
-    backgroundColor: '#046307',
-    color: 'white',
-    fontSize: '1vw',
-    fontWeight: 500,
+    padding: '1vw 2vw',
+    backgroundColor: '#3182ce',
+    color: '#fff',
     border: 'none',
-    borderRadius: '0.4vw',
+    borderRadius: '0.5vw',
+    fontSize: '1vw',
+    fontWeight: '600',
     cursor: 'pointer',
-    transition: 'all 0.2s ease',
+    transition: 'background-color 0.2s',
+  },
+  btnDisabled: {
+    backgroundColor: '#a0aec0',
+    cursor: 'not-allowed',
+  },
+  receiptTableContainer: {
+    border: '0.1vw solid #edf2f7',
+    borderRadius: '0.5vw',
+    overflow: 'hidden',
+    marginBottom: '2vw',
+  },
+  receiptTableHeader: {
+    backgroundColor: '#f7fafc',
+    borderBottom: '0.1vw solid #edf2f7',
+  },
+  receiptTableRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(11, 1fr)',
+    borderBottom: '0.1vw solid #edf2f7',
+  },
+  receiptTableHeaderCell: {
+    padding: '1vw',
+    fontSize: '0.9vw',
+    fontWeight: '600',
+    color: '#4a5568',
+  },
+  receiptTableCell: {
+    padding: '1vw',
+    fontSize: '0.9vw',
+    color: '#4a5568',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+  },
+  receiptTableBody: {
+    maxHeight: '20vh',
+    overflowY: 'auto',
+  },
+  receiptTableFooter: {
+    backgroundColor: '#f7fafc',
+    borderTop: '0.1vw solid #edf2f7',
+  },
+  receiptTableFooterCell: {
+    padding: '1vw',
+    fontSize: '0.9vw',
+    fontWeight: '600',
+    color: '#4a5568',
+  },
+  noData: {
+    padding: '2vw',
+    textAlign: 'center',
+    color: '#a0aec0',
+    fontSize: '1vw',
   },
   transactionLogSection: {
-    marginTop: '3vw',
-  },
-  sectionTitle: {
-    fontSize: '1.2vw',
-    fontWeight: 600,
-    color: '#1e293b',
-    marginBottom: '1vw',
+    marginTop: '2vw',
   },
   transactionTable: {
-    border: '1px solid #e2e8f0',
+    border: '0.1vw solid #edf2f7',
     borderRadius: '0.5vw',
     overflow: 'hidden',
   },
   transactionTableHeader: {
-    backgroundColor: '#f8fafc',
-    borderBottom: '1px solid #e2e8f0',
+    backgroundColor: '#f7fafc',
+    borderBottom: '0.1vw solid #edf2f7',
   },
   transactionTableRow: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr 1.5fr 1.5fr',
-    gap: '1vw',
-    padding: '1vw',
-    borderBottom: '1px solid #e2e8f0',
+    gridTemplateColumns: 'repeat(5, 1fr)',
+    borderBottom: '0.1vw solid #edf2f7',
   },
   transactionTableCell: {
-    fontSize: '1vw',
-    display: 'flex',
-    alignItems: 'center',
+    padding: '1vw',
+    fontSize: '0.9vw',
+    color: '#4a5568',
   },
   transactionTableBody: {
-    maxHeight: '30vh',
+    maxHeight: '20vh',
     overflowY: 'auto',
   },
 };

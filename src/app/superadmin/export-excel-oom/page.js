@@ -1,29 +1,173 @@
 'use client'
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
+import * as XLSX from 'xlsx';
 
 const DataTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [data] = useState([ 
-    { id: 1, name: "Ahmed Hassan", receipt: "RCP001", type: "qurbani", phone: "+1234567890", status: 0 }, 
-    { id: 2, name: "Fatima Ali", receipt: "RCP002", type: "aqeeqah boy", phone: "+1234567891", status: 0 }, 
-    { id: 3, name: "Omar Sheikh", receipt: "RCP003", type: "qurbani", phone: "+1234567892", status: 0 }, 
-    { id: 4, name: "Aisha Khan", receipt: "RCP004", type: "aqeeqah girl", phone: "+1234567893", status: 0 }, 
-    { id: 5, name: "Ibrahim Malik", receipt: "RCP005", type: "qurbani", phone: "+1234567894", status: 0 }, 
-    { id: 6, name: "Zainab Ahmed", receipt: "RCP006", type: "aqeeqah boy", phone: "+1234567895", status: 0 }, 
-    { id: 7, name: "Muhammad Tariq", receipt: "RCP007", type: "qurbani", phone: "+1234567896", status: 0 }, 
-    { id: 8, name: "Khadija Begum", receipt: "RCP008", type: "aqeeqah girl", phone: "+1234567897", status: 0 }, 
-    { id: 9, name: "Yusuf Rahman", receipt: "RCP009", type: "qurbani", phone: "+1234567898", status: 0 }, 
-    { id: 10, name: "Mariam Siddique", receipt: "RCP010", type: "aqeeqah boy", phone: "+1234567899", status: 0 } 
-  ]);
+  const [customerData, setCustomerData] = useState([]);
+  const [areasList, setAreasList] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [exportLoading, setExportLoading] = useState(false);
 
-  const exportToExcel = () => {
-    console.log('Exporting to Excel...');
+  // Fetch customer data
+  const fetchCustomerData = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get('/api/customers?user_id=0');
+      
+      // Filter for Mumbai customers with status 0
+      const filteredData = response.data.filter(customer => 
+        customer.zone === 'Out Of Mumbai' && customer.status === 0
+      );
+      
+      setCustomerData(filteredData);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching customer data:', error);
+      setLoading(false);
+    }
   };
 
-  const filteredData = data.filter(item =>
+  // Fetch areas from API
+  const fetchAreas = async () => {
+    try {
+      const response = await axios.get('/api/areas');
+      setAreasList(response.data);
+    } catch (error) {
+      console.error('Error fetching areas:', error);
+    }
+  };
+
+  // Fetch users from API
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get('/api/users');
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCustomerData();
+    fetchAreas();
+    fetchUsers();
+  }, []);
+
+  // Helper function to get area name from user_id
+  const getAreaName = (userId) => {
+    const user = users.find(user => user.user_id == userId);
+    return user ? user.area_name : 'N/A';
+  };
+
+  // Helper function to get zone name from area name
+  const getZoneName = (areaName) => {
+    const area = areasList.find(area => area.area_name === areaName);
+    return area ? area.zone_name : 'N/A';
+  };
+
+  // Helper function to get username from user_id
+  const getUsername = (userId) => {
+    const user = users.find(user => user.user_id == userId);
+    return user ? user.username : 'N/A';
+  };
+
+  // Update status to 1 for all filtered customers
+  const updateCustomerStatus = async (customers) => {
+    try {
+      // Create an array of promises for each customer update
+      const updatePromises = customers.map(customer => 
+        axios.patch('/api/customers', {
+          user_id: customer.user_id,
+          spl_id: customer.spl_id,
+          status: true
+        })
+      );
+      
+      // Wait for all updates to complete
+      await Promise.all(updatePromises);
+      
+      console.log('All customer statuses updated successfully');
+      return true;
+    } catch (error) {
+      console.error('Error updating customer statuses:', error);
+      return false;
+    }
+  };
+
+  // Export to Excel and update status
+  const exportToExcel = async () => {
+    if (customerData.length === 0) {
+      alert('No data to export');
+      return;
+    }
+    
+    try {
+      setExportLoading(true);
+      
+      // First update all customer statuses to 1
+      const updateSuccess = await updateCustomerStatus(customerData);
+      
+      if (!updateSuccess) {
+        alert('Failed to update customer statuses. Export aborted.');
+        setExportLoading(false);
+        return;
+      }
+      
+      // Prepare data for Excel export - exclude spl_id, user_id, status, payment_status, created_at, updated_at
+      // Add area, zone, and username based on user_id
+      const exportData = customerData.map((customer, index) => {
+        const areaName = getAreaName(customer.user_id);
+        const zoneName = getZoneName(areaName);
+        const username = getUsername(customer.user_id);
+        
+        return {
+          'Sr No.': index + 1,
+          'Receipt': customer.recipt || 'N/A',
+          'Name': customer.name,
+          'Type': customer.type,
+          'Area': areaName,
+          'Zone': zoneName,
+          'Nigra': username,
+          'Phone': customer.phone || 'N/A'
+        };
+      });
+      
+      // Create worksheet
+      const worksheet = XLSX.utils.json_to_sheet(exportData);
+      
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Out of Mumbai');
+      
+      // Generate Excel file
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      
+      // Save file
+      const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(data);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `Out_of_Mumbai_${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.click();
+      
+      // Refresh data to reflect status changes
+      fetchCustomerData();
+      
+      setExportLoading(false);
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      setExportLoading(false);
+      alert('Failed to export data to Excel');
+    }
+  };
+
+  const filteredData = customerData.filter(item =>
     Object.values(item).some(val =>
-      String(val).toLowerCase().includes(searchTerm.toLowerCase())
+      val && String(val).toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
 
@@ -34,7 +178,7 @@ const DataTable = () => {
         <div style={styles.header}>
           <div style={styles.headerContent}>
             <div style={styles.headerTitle}>
-              <h1 style={styles.h1}>All Records - Out of Mumbai</h1>
+              <h1 style={styles.h1}>Pending Records - Out of Mumbai</h1>
             </div>
             
             <div style={styles.headerActions}>
@@ -53,10 +197,20 @@ const DataTable = () => {
               {/* Export Button */}
               <button 
                 onClick={exportToExcel}
-                style={styles.exportBtn}
+                style={{
+                  ...styles.exportBtn,
+                  ...(exportLoading ? styles.exportBtnLoading : {})
+                }}
+                disabled={exportLoading || customerData.length === 0}
               >
-                <DownloadIcon style={styles.btnIcon} />
-                Export
+                {exportLoading ? (
+                  <span>Exporting...</span>
+                ) : (
+                  <>
+                    <DownloadIcon style={styles.btnIcon} />
+                    Export
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -64,7 +218,7 @@ const DataTable = () => {
           {/* Stats */}
           <div style={styles.stats}>
             <div style={styles.statsText}>
-              Total Records: <span style={styles.statsValue}>{data.length}</span>
+              Total Records: <span style={styles.statsValue}>{customerData.length}</span>
             </div>
           </div>
         </div>
@@ -75,6 +229,7 @@ const DataTable = () => {
           <div style={styles.tableHeader}>
             <div style={styles.tableRow}>
               <div style={{...styles.tableCell, ...styles.cellId, ...styles.headerCell}}>Sr no.</div>
+              <div style={{...styles.tableCell, ...styles.cellReceipt, ...styles.headerCell}}>RECEIPT</div>
               <div style={{...styles.tableCell, ...styles.cellName, ...styles.headerCell}}>NAME</div>
               <div style={{...styles.tableCell, ...styles.cellType, ...styles.headerCell}}>TYPE</div>
               <div style={{...styles.tableCell, ...styles.cellPhone, ...styles.headerCell}}>PHONE</div>
@@ -84,7 +239,12 @@ const DataTable = () => {
 
           {/* Table Body */}
           <div style={styles.tableBody}>
-            {filteredData.length > 0 ? (
+            {loading ? (
+              <div style={styles.loadingState}>
+                <div style={styles.spinner}></div>
+                <p style={styles.loadingText}>Loading data...</p>
+              </div>
+            ) : filteredData.length > 0 ? (
               filteredData.map((item, index) => (
                 <div 
                   key={item.id} 
@@ -94,6 +254,11 @@ const DataTable = () => {
                   {/* ID */}
                   <div style={{...styles.tableCell, ...styles.cellId}}>
                     <span style={styles.idText}>{index + 1}</span>
+                  </div>
+                  
+                  {/* Receipt */}
+                  <div style={{...styles.tableCell, ...styles.cellReceipt}}>
+                    <span style={styles.receiptText}>{item.recipt || 'N/A'}</span>
                   </div>
                   
                   {/* Name */}
@@ -108,7 +273,7 @@ const DataTable = () => {
                   
                   {/* Phone */}
                   <div style={{...styles.tableCell, ...styles.cellPhone}}>
-                    <span style={styles.phoneText}>{item?.phone}</span>
+                    <span style={styles.phoneText}>{item.phone || 'N/A'}</span>
                   </div>
                   
                   {/* Status */}
@@ -166,6 +331,11 @@ const DataTable = () => {
         
         .table-body::-webkit-scrollbar-thumb:hover {
           background-color: #94a3b8;
+        }
+        
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
         }
       `}</style>
     </div>
@@ -271,6 +441,12 @@ const styles = {
     cursor: 'pointer',
     transition: 'all 0.2s ease',
   },
+  exportBtnLoading: {
+    opacity: 0.7,
+    cursor: 'not-allowed',
+    transform: 'none !important',
+    boxShadow: 'none !important',
+  },
   btnIcon: {
     width: '1vw',
     height: '1vw',
@@ -296,7 +472,7 @@ const styles = {
   },
   tableRow: {
     display: 'grid',
-    gridTemplateColumns: '0.5fr 1.5fr 1fr 1fr 1fr',
+    gridTemplateColumns: '0.5fr 1fr 1.5fr 1fr 1fr 1fr',
     gap: '1vw',
     padding: '0 2vw',
   },
@@ -319,13 +495,16 @@ const styles = {
   },
   dataRow: {
     display: 'grid',
-    gridTemplateColumns: '0.5fr 1.5fr 1fr 1fr 1fr',
+    gridTemplateColumns: '0.5fr 1fr 1.5fr 1fr 1fr 1fr',
     gap: '1vw',
     padding: '1vw 2vw',
     borderBottom: '1px solid #e2e8f0',
     transition: 'all 0.2s ease',
   },
   cellId: {
+    justifyContent: 'center',
+  },
+  cellReceipt: {
     justifyContent: 'center',
   },
   cellName: {
@@ -344,6 +523,11 @@ const styles = {
     fontSize: '1vw',
     fontWeight: 700,
     color: '#046307',
+  },
+  receiptText: {
+    fontSize: '1vw',
+    fontWeight: 500,
+    color: '#3182ce',
   },
   nameText: {
     fontSize: '1vw',
@@ -400,6 +584,26 @@ const styles = {
   emptyText: {
     fontSize: '0.9vw',
     color: '#475569',
+  },
+  loadingState: {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '6vw 0',
+  },
+  spinner: {
+    width: '3vw',
+    height: '3vw',
+    border: '0.3vw solid #f3f4f6',
+    borderTop: '0.3vw solid #046307',
+    borderRadius: '50%',
+    animation: 'spin 1s linear infinite',
+    marginBottom: '1vw',
+  },
+  loadingText: {
+    fontSize: '1.2vw',
+    color: '#4b5563',
   },
 };
 
