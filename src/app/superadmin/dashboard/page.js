@@ -7,9 +7,11 @@ import axios from 'axios';
 
 const Dashboard = () => {
   const [isLocked, setIsLocked] = useState(false);
+  const [isUpdatingLock, setIsUpdatingLock] = useState(false);
   const [adminData, setAdminData] = useState({ 
     m_a_cost: 0,
-    oom_a_cost: 0 
+    oom_a_cost: 0,
+    lockall: false
   }); 
   const [customerData, setCustomerData] = useState([]);
   const [dashboardData, setDashboardData] = useState([]);
@@ -45,11 +47,16 @@ const Dashboard = () => {
     if (response.data.success) {
       const fullMaCost = parseFloat(response.data.data.m_a_cost);
       const fullOomCost = parseFloat(response.data.data.oom_a_cost);
+      const lockStatus = response.data.data.lockall;
       
       setAdminData({
         m_a_cost: fullMaCost / 7,
-        oom_a_cost: fullOomCost / 7
+        oom_a_cost: fullOomCost / 7,
+        lockall: lockStatus
       });
+      
+      // Update lock state
+      setIsLocked(lockStatus);
       
       // Update input values with full costs
       setMumbaiCostInput(fullMaCost.toString());
@@ -113,7 +120,36 @@ const Dashboard = () => {
     updateCost(costType, value);
   };
 
-  // Handle cancel edit
+  // Update lock status via API
+  const updateLockStatus = async (lockStatus) => {
+    setIsUpdatingLock(true);
+    try {
+      const response = await axios.patch('/api/superadmin', {
+        lockall: lockStatus,
+        name: 'superadmin',
+        password: 'super123'
+      });
+      
+      if (response.data.success) {
+        setIsLocked(lockStatus);
+        setAdminData(prev => ({ ...prev, lockall: lockStatus }));
+        console.log(`Lock status updated to ${lockStatus ? 'locked' : 'unlocked'}`);
+      }
+    } catch (error) {
+      console.error('Error updating lock status:', error);
+      alert('Failed to update lock status. Please try again.');
+      // Revert the lock state on failure
+      setIsLocked(!lockStatus);
+    } finally {
+      setIsUpdatingLock(false);
+    }
+  };
+
+  // Handle lock button click
+  const handleLockToggle = () => {
+    const newLockStatus = !isLocked;
+    updateLockStatus(newLockStatus);
+  };
   const handleCancel = (costType) => {
     if (costType === 'm_a_cost') {
       setIsEditingMumbai(false);
@@ -225,11 +261,12 @@ const Dashboard = () => {
           </button>
           
           <button
-            onClick={() => setIsLocked(!isLocked)}
+            onClick={handleLockToggle}
+            disabled={isUpdatingLock}
             className={`lock-button ${isLocked ? 'locked' : 'unlocked'}`}
           >
             {isLocked ? <Lock size={18} /> : <Unlock size={18} />}
-            {isLocked ? 'Locked' : 'Lock'}
+            {isUpdatingLock ? 'Updating...' : (isLocked ? 'Locked' : 'Lock')}
           </button>
         </div>
       </div>

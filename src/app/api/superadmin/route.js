@@ -16,7 +16,7 @@ export async function GET(request) {
 
     // Authenticate and get the single row
     const [rows] = await pool.execute(
-      'SELECT id, name, m_a_cost, oom_a_cost FROM superadmin WHERE name = ? AND password = ? LIMIT 1',
+      'SELECT id, name, m_a_cost, oom_a_cost, lockall FROM superadmin WHERE name = ? AND password = ? LIMIT 1',
       [name, password]
     );
 
@@ -98,13 +98,84 @@ export async function PUT(request) {
 
     // Fetch the updated single row and return it (like GET)
     const [updatedRows] = await pool.execute(
-      'SELECT id, name, m_a_cost, oom_a_cost FROM superadmin LIMIT 1'
+      'SELECT id, name, m_a_cost, oom_a_cost, lockall FROM superadmin LIMIT 1'
     );
 
     return Response.json({
       success: true,
       message: 'Costs updated successfully',
       data: updatedRows[0]
+    }, { status: 200 });
+
+  } catch (error) {
+    console.error('Database error:', error);
+    return Response.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
+
+// PATCH - Update lockall status
+export async function PATCH(request) {
+  try {
+    const body = await request.json();
+    const { lockall, name, password } = body;
+
+    // Validate required fields
+    if (lockall === undefined) {
+      return Response.json(
+        { error: 'lockall field is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!name || !password) {
+      return Response.json(
+        { error: 'Name and password are required for authentication' },
+        { status: 400 }
+      );
+    }
+
+    // Validate lockall is boolean
+    if (typeof lockall !== 'boolean') {
+      return Response.json(
+        { error: 'lockall must be a boolean value' },
+        { status: 400 }
+      );
+    }
+
+    // First authenticate the user
+    const [authRows] = await pool.execute(
+      'SELECT id FROM superadmin WHERE name = ? AND password = ? LIMIT 1',
+      [name, password]
+    );
+
+    if (authRows.length === 0) {
+      return Response.json(
+        { error: 'Invalid credentials' },
+        { status: 401 }
+      );
+    }
+
+    // Update lockall for the authenticated user
+    const [result] = await pool.execute(
+      'UPDATE superadmin SET lockall = ? WHERE name = ? AND password = ? LIMIT 1',
+      [lockall, name, password]
+    );
+
+    if (result.affectedRows === 0) {
+      return Response.json(
+        { error: 'No data found to update' },
+        { status: 404 }
+      );
+    }
+
+    // Return success response
+    return Response.json({
+      success: true,
+      message: `Lock status updated to ${lockall ? 'locked' : 'unlocked'}`,
+      data: { lockall }
     }, { status: 200 });
 
   } catch (error) {
