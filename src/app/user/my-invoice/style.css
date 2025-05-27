@@ -32,9 +32,8 @@ body {
 .container {
   display: flex;
   flex-direction: column;
-  padding: 24px;
+  padding: 12px;
   max-width: 100%;
-  min-height: 100vh;
 }
 
 /* Search container styles */
@@ -48,7 +47,6 @@ body {
 .search-input-container {
   position: relative;
   width: 100%;
-  max-width: 320px;
 }
 
 .search-input {
@@ -133,7 +131,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  height: 65vh;
+  height: 70vh;
 }
 
 
@@ -499,6 +497,9 @@ body {
     display: none;
   }
   
+  .header-cell {
+    font-size: 14px;
+  }
   /* Adjust flex for visible columns */
   .header-cell, .table-cell {
     flex: none;
@@ -557,3 +558,4 @@ body {
     padding: 0;
   }
 }
+
