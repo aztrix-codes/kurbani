@@ -183,14 +183,16 @@ const DataTable = () => {
     return Math.ceil(num);
   };
 
-  // Helper function to get zone name from area name
+  // Helper function to get zone name from area name - consistent across the component
   const getZoneNameFromArea = (areaName) => {
+    if (!areaName) return 'N/A';
     const matchedArea = areasList.find(area => area.area_name === areaName);
     return matchedArea ? matchedArea.zone_name : 'Mumbai';
   };
 
   // Handle opening eye modal
   const handleEyeClick = (rowId, rowData, item) => {
+    console.log("Eye click - item:", item);
     setSelectedRowId(rowId);
     setSelectedRowData(rowData);
     setUserViewDetail(item);
@@ -199,11 +201,12 @@ const DataTable = () => {
 
   // Handle opening receipt modal
   const handleReceiptClick = (rowId, rowData, item) => {
+    console.log("Receipt click - item:", item);
     fetchReceipts();
     fetchAdminData(); // Refresh admin data when opening receipt modal
     setSelectedRowId(rowId);
     setSelectedRowData(rowData);
-    setUserViewDetail(item); // Set userViewDetail with the user object
+    setUserViewDetail(item);
     
     // Get existing transactions for this row or initialize empty array
     const existingTransactions = allTransactionLogs[rowId] || [];
@@ -305,16 +308,23 @@ const DataTable = () => {
     }
     
     try {
+      // Calculate total shares, paid shares, and pending shares
+      const totalShares = selectedRowData?.length || 0;
+      const sharesPaid = selectedRowData ? selectedRowData.filter(customer => customer.payment_status === 1).length : 0;
+      const pendingShares = totalShares - sharesPaid;
+      
       // Calculate the amount with rounding up
       const amount = roundUp(howMuchPaying * amountPerShare);
       
-      // Get area from userViewDetail
-      const area = userViewDetail?.area_name || 'N/A';
+      // Get area directly from userViewDetail
+      const area = userViewDetail?.area_name;
       
-      // Get zone from areasList using area name
+      // Get zone directly from userViewDetail's area using areasList
       const zone = getZoneNameFromArea(area);
       
-      console.log("Using area:", area, "and zone:", zone);
+      console.log("Receipt submission - userViewDetail:", userViewDetail);
+      console.log("Receipt submission - area:", area);
+      console.log("Receipt submission - zone:", zone);
       
       // Get current year for Qurbani purpose
       const currentYear = new Date().getFullYear();
@@ -334,7 +344,7 @@ const DataTable = () => {
         quantity: parseInt(howMuchPaying, 10)
       };
       
-      console.log("Receipt data being sent:", receiptData);
+      console.log('Receipt data being sent:', receiptData);
       
       // Create receipt
       await createReceipt(receiptData);
@@ -560,7 +570,9 @@ const DataTable = () => {
             <div style={styles.recordDetails}>
               <div style={styles.recordItem}>
                 <span style={styles.recordLabel}>Zone:</span>
-                <span style={styles.recordValue}>{getZoneNameFromArea(userViewDetail?.area_name)}</span>
+                <span style={styles.recordValue}>
+                  {getZoneNameFromArea(userViewDetail?.area_name)}
+                </span>
               </div>
               <div style={styles.recordItem}>
                 <span style={styles.recordLabel}>Area:</span>
@@ -644,20 +656,13 @@ const DataTable = () => {
               <button style={styles.closeButton} onClick={closeReceiptModal}>×</button>
             </div>
             <div style={styles.modalBody}>
-              {/* Debug Info - Can be removed after testing */}
-              <div style={{padding: '10px', margin: '10px 0', backgroundColor: '#f0f9ff', borderRadius: '5px'}}>
-                <p><strong>Debug Info:</strong></p>
-                <p>Area: {userViewDetail?.area_name || 'N/A'}</p>
-                <p>Zone: {getZoneNameFromArea(userViewDetail?.area_name)}</p>
-              </div>
-              
               {/* Form Section */}
               <div style={styles.formSection}>
                 <h3 style={styles.sectionTitle}>Add New Receipt</h3>
                 <form onSubmit={handleFormSubmit}>
                   <div style={styles.formGrid}>
-                    {/* Calculate values using the provided filtering logic */}
                     {(() => {
+                      // Define all share variables in this scope to ensure they're available
                       const totalShares = selectedRowData?.length || 0;
                       const sharesPaid = selectedRowData ? selectedRowData.filter(customer => customer.payment_status === 1).length : 0;
                       const pendingShares = totalShares - sharesPaid;
@@ -744,8 +749,7 @@ const DataTable = () => {
                               min={0}
                               style={{
                                 ...styles.formInput,
-                                ...(formErrors.howMuchPaying ? styles.inputError : {}),
-                                ...(pendingShares <= 0 ? styles.inputDisabled : {})
+                                ...(formErrors.howMuchPaying ? styles.inputError : {})
                               }} 
                               disabled={pendingShares <= 0}
                               required
@@ -809,202 +813,212 @@ const DataTable = () => {
                     })()}
                   </div>
                   
-                  {/* Image Upload Section */}
-                  <div style={styles.imageSection}>
-                    <div style={styles.imageUploadContainer}>
-                      <div style={styles.imagePreviewContainer}>
-                        {selectedImage ? (
-                          <img 
-                            src={selectedImage} 
-                            alt="Receipt" 
-                            style={styles.imagePreview} 
-                          />
-                        ) : (
-                          <div style={styles.noImagePlaceholder}>
-                            <ImageIcon style={styles.noImageIcon} />
-                            <p style={styles.noImageText}>No image selected</p>
+                  <div style={styles.imageUploadSection}>
+                    <div style={{
+                      ...styles.imagePreview,
+                      ...(formErrors.image ? styles.imagePreviewError : {})
+                    }}>
+                      {selectedImage ? (
+                        <img src={selectedImage} alt="Selected" style={styles.previewImage} />
+                      ) : (
+                        <div style={styles.placeholderImage}>
+                          <CameraIcon style={styles.cameraIconLarge} />
+                          <div style={styles.imageRequiredText}>
+                            Image Required <span style={styles.requiredField}>*</span>
                           </div>
-                        )}
-                      </div>
-                      
-                      <div style={styles.imageUploadActions}>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleImageSelect}
-                          ref={fileInputRef}
-                          style={{ display: 'none' }}
-                        />
-                        <input
-                          type="file"
-                          accept="image/*"
-                          capture="environment"
-                          onChange={handleImageSelect}
-                          ref={cameraInputRef}
-                          style={{ display: 'none' }}
-                        />
-                        
-                        <button 
-                          type="button" 
-                          onClick={handleFileUpload}
-                          style={styles.imageUploadBtn}
-                        >
-                          <UploadIcon style={styles.btnIcon} />
-                          Upload Image
-                        </button>
-                        
-                        <button 
-                          type="button" 
-                          onClick={handleCameraCapture}
-                          style={styles.imageUploadBtn}
-                        >
-                          <CameraIcon style={styles.btnIcon} />
-                          Take Photo
-                        </button>
-                      </div>
-                      
-                      {formErrors.image && (
-                        <div style={{...styles.errorMessage, textAlign: 'center', marginTop: '0.5vw'}}>
-                          {formErrors.image}
                         </div>
                       )}
                     </div>
+                    
+                    <div style={styles.imageActions}>
+                      {formErrors.image && (
+                        <div style={styles.errorMessage}>{formErrors.image}</div>
+                      )}
+                      
+                      {/* File upload input */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        style={{ display: 'none' }}
+                        ref={fileInputRef}
+                      />
+                      
+                      {/* Camera capture input */}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageSelect}
+                        style={{ display: 'none' }}
+                        ref={cameraInputRef}
+                        capture="environment"
+                      />
+                      
+                      <button 
+                        type="button" 
+                        onClick={handleFileUpload} 
+                        style={styles.imageButton}
+                      >
+                        <UploadIcon style={styles.btnIcon} />
+                        Upload Image
+                      </button>
+                      
+                      <button 
+                        type="button" 
+                        onClick={handleCameraCapture} 
+                        style={styles.cameraButton}
+                      >
+                        <CameraIcon style={styles.btnIcon} />
+                        Take Photo
+                      </button>
+                    </div>
                   </div>
                   
-                  {/* Submit Button */}
                   <div style={styles.formActions}>
-                    <button 
-                      type="submit" 
-                      style={{
-                        ...styles.submitBtn,
-                        ...(pendingShares <= 0 ? styles.submitBtnDisabled : {})
-                      }}
-                      disabled={pendingShares <= 0}
-                    >
-                      Submit Receipt
-                    </button>
+                    {(() => {
+                      const pendingShares = selectedRowData ? 
+                        (selectedRowData.length - selectedRowData.filter(customer => customer.payment_status === 1).length) : 0;
+                      
+                      return (
+                        <button 
+                          type="submit" 
+                          style={{
+                            ...styles.submitButton,
+                            ...(pendingShares <= 0 ? styles.btnDisabled : {})
+                          }}
+                          disabled={pendingShares <= 0}
+                        >
+                          Submit Payment
+                        </button>
+                      );
+                    })()}
                   </div>
                 </form>
               </div>
               
-              {/* Transaction Log Section */}
-              <div style={styles.transactionSection}>
-                <h3 style={styles.sectionTitle}>Transaction History</h3>
+              {/* Excel-like Table for Receipt Records */}
+              <div style={styles.receiptTableContainer}>
+                {/* Fixed Header */}
+                <div style={styles.receiptTableHeader}>
+                  <div style={styles.receiptTableRow}>
+                    <div style={styles.receiptTableHeaderCell}>ID</div>
+                    <div style={styles.receiptTableHeaderCell}>Zone</div>
+                    <div style={styles.receiptTableHeaderCell}>Area</div>
+                    <div style={styles.receiptTableHeaderCell}>Purpose</div>
+                    <div style={styles.receiptTableHeaderCell}>Paid By</div>
+                    <div style={styles.receiptTableHeaderCell}>Received By</div>
+                    <div style={styles.receiptTableHeaderCell}>Subtotal</div>
+                    <div style={styles.receiptTableHeaderCell}>Net Total</div>
+                    <div style={styles.receiptTableHeaderCell}>Rate</div>
+                    <div style={styles.receiptTableHeaderCell}>Quantity</div>
+                    <div style={styles.receiptTableHeaderCell}>Created Date</div>
+                  </div>
+                </div>
                 
-                {currentTransactionLog.length > 0 ? (
-                  <div style={styles.transactionList}>
-                    {currentTransactionLog.map((transaction, index) => (
-                      <div key={index} style={styles.transactionCard}>
-                        <div style={styles.transactionHeader}>
-                          <div style={styles.transactionDate}>{transaction.date}</div>
-                          <div style={styles.transactionAmount}>₹{transaction.amount}</div>
-                        </div>
-                        
-                        <div style={styles.transactionDetails}>
-                          <div style={styles.transactionItem}>
-                            <span style={styles.transactionLabel}>Shares:</span>
-                            <span style={styles.transactionValue}>{transaction.shares}</span>
-                          </div>
-                          
-                          <div style={styles.transactionItem}>
-                            <span style={styles.transactionLabel}>Paid By:</span>
-                            <span style={styles.transactionValue}>{transaction.paidBy}</span>
-                          </div>
-                          
-                          <div style={styles.transactionItem}>
-                            <span style={styles.transactionLabel}>Collected By:</span>
-                            <span style={styles.transactionValue}>{transaction.collectedBy}</span>
-                          </div>
-                        </div>
-                        
-                        <div style={styles.transactionImageContainer}>
-                          <img 
-                            src={transaction.image} 
-                            alt="Receipt" 
-                            style={styles.transactionImage} 
-                          />
+                {/* Scrollable Body */}
+                <div style={styles.receiptTableBody} className="tableBody">
+                  {receipts && receipts.length > 0 ? (
+                    receipts.map((receipt, index) => (
+                      <div key={index} style={styles.receiptTableRow}>
+                        <div style={styles.receiptTableCell}>{receipt.id}</div>
+                        <div style={styles.receiptTableCell}>{receipt.zone}</div>
+                        <div style={styles.receiptTableCell}>{receipt.area}</div>
+                        <div style={styles.receiptTableCell}>{receipt.purpose}</div>
+                        <div style={styles.receiptTableCell}>{receipt.paid_by}</div>
+                        <div style={styles.receiptTableCell}>{receipt.received_by}</div>
+                        <div style={styles.receiptTableCell}>{receipt.subtotal}</div>
+                        <div style={styles.receiptTableCell}>{receipt.net_total}</div>
+                        <div style={styles.receiptTableCell}>{receipt.rate}</div>
+                        <div style={styles.receiptTableCell}>{receipt.quantity}</div>
+                        <div style={styles.receiptTableCell}>
+                          {new Date(receipt.created_at).toLocaleString()}
                         </div>
                       </div>
-                    ))}
+                    ))
+                  ) : (
+                    <div style={styles.noData}>No receipt records found</div>
+                  )}
+                </div>
+                
+                {/* Fixed Footer with Totals */}
+                <div style={styles.receiptTableFooter}>
+                  <div style={styles.receiptTableRow}>
+                    <div style={styles.receiptTableFooterCell} colSpan="6">Totals:</div>
+                    <div style={styles.receiptTableFooterCell}>
+                      {receipts && receipts.length > 0 
+                        ? receipts.reduce((sum, receipt) => sum + parseFloat(receipt.subtotal || 0), 0).toFixed(2) 
+                        : '0.00'}
+                    </div>
+                    <div style={styles.receiptTableFooterCell}>
+                      {receipts && receipts.length > 0 
+                        ? receipts.reduce((sum, receipt) => sum + parseFloat(receipt.net_total || 0), 0).toFixed(2) 
+                        : '0.00'}
+                    </div>
+                    <div style={styles.receiptTableFooterCell}>-</div>
+                    <div style={styles.receiptTableFooterCell}>
+                      {receipts && receipts.length > 0 
+                        ? receipts.reduce((sum, receipt) => sum + parseFloat(receipt.quantity || 0), 0).toFixed(2) 
+                        : '0.00'}
+                    </div>
+                    <div style={styles.receiptTableFooterCell}>Records: {receipts?.length || 0}</div>
                   </div>
-                ) : (
-                  <div style={styles.noTransactionsMessage}>
-                    No transactions recorded yet.
-                  </div>
-                )}
+                </div>
               </div>
+              
+              {/* Transaction History */}
+              {currentTransactionLog.length > 0 && (
+                <div style={styles.transactionLogSection}>
+                  <h3 style={styles.sectionTitle}>Transaction History</h3>
+                  <div style={styles.transactionTable}>
+                    <div style={styles.transactionTableHeader}>
+                      <div style={styles.transactionTableRow}>
+                        <div style={styles.transactionTableCell}>Date</div>
+                        <div style={styles.transactionTableCell}>Shares</div>
+                        <div style={styles.transactionTableCell}>Amount</div>
+                        <div style={styles.transactionTableCell}>Paid By</div>
+                        <div style={styles.transactionTableCell}>Collected By</div>
+                      </div>
+                    </div>
+                    <div style={styles.transactionTableBody}>
+                      {currentTransactionLog.map((transaction, index) => (
+                        <div key={index} style={styles.transactionTableRow}>
+                          <div style={styles.transactionTableCell}>{transaction.date}</div>
+                          <div style={styles.transactionTableCell}>{transaction.shares}</div>
+                          <div style={styles.transactionTableCell}>{transaction.amount}</div>
+                          <div style={styles.transactionTableCell}>{transaction.paidBy}</div>
+                          <div style={styles.transactionTableCell}>{transaction.collectedBy}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
       )}
-      
-      <style jsx global>{`
-        .data-row:hover {
-          background-color: #f8fafc;
-          transition: background-color 0.2s ease;
-        }
-        
-        input::placeholder {
-          color: rgba(255, 255, 255, 0.7);
-        }
-        
-        input:focus {
-          outline: none;
-          background-color: rgba(255, 255, 255, 0.3) !important;
-          border-color: rgba(255, 255, 255, 0.5) !important;
-        }
-        
-        button:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
-        }
-        
-        .table-body::-webkit-scrollbar {
-          width: 0.5vw;
-        }
-        
-        .table-body::-webkit-scrollbar-track {
-          background: #f1f5f9;
-        }
-        
-        .table-body::-webkit-scrollbar-thumb {
-          background-color: #cbd5e1;
-          border-radius: 1vw;
-        }
-        
-        .table-body::-webkit-scrollbar-thumb:hover {
-          background-color: #94a3b8;
-        }
-      `}</style>
     </div>
   );
 };
 
-// Icons components
-const SearchIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+// Icons
+const SearchIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <circle cx="11" cy="11" r="8"></circle>
     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
   </svg>
 );
 
-const DownloadIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const DownloadIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
     <polyline points="7 10 12 15 17 10"></polyline>
     <line x1="12" y1="15" x2="12" y2="3"></line>
   </svg>
 );
 
-const EyeIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-    <circle cx="12" cy="12" r="3"></circle>
-  </svg>
-);
-
-const FileTextIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const FileTextIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
     <polyline points="14 2 14 8 20 8"></polyline>
     <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -1013,45 +1027,38 @@ const FileTextIcon = ({ style }) => (
   </svg>
 );
 
-const ImageIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-    <circle cx="8.5" cy="8.5" r="1.5"></circle>
-    <polyline points="21 15 16 10 5 21"></polyline>
+const EyeIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+    <circle cx="12" cy="12" r="3"></circle>
   </svg>
 );
 
-const UploadIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+const CameraIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+    <circle cx="12" cy="13" r="4"></circle>
+  </svg>
+);
+
+const UploadIcon = (props) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
     <polyline points="17 8 12 3 7 8"></polyline>
     <line x1="12" y1="3" x2="12" y2="15"></line>
   </svg>
 );
 
-const CameraIcon = ({ style }) => (
-  <svg style={style} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
-    <circle cx="12" cy="13" r="4"></circle>
-  </svg>
-);
-
+// Styles
 const styles = {
   container: {
-    height: '100%',
-    backgroundColor: '#f1f5f9',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '.5vw'
+    padding: '1vw',
+    fontFamily: 'Arial, sans-serif',
   },
   card: {
-    backgroundColor: 'white',
-    boxShadow: '0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1)',
-    border: '1px solid #e2e8f0',
+    backgroundColor: '#fff',
+    boxShadow: '0 0.2vw 0.5vw rgba(0, 0, 0, 0.1)',
     overflow: 'hidden',
-    width: '100%',
-    height: "100%"
   },
   header: {
     background: '#046307',
@@ -1136,126 +1143,121 @@ const styles = {
     opacity: 1,
   },
   tableContainer: {
-    overflow: 'hidden',
+    overflowX: 'auto',
   },
   tableHeader: {
-    backgroundColor: '#f8fafc',
-    borderBottom: '1px solid #e2e8f0',
+    backgroundColor: '#f7fafc',
+    borderBottom: '0.1vw solid #edf2f7',
   },
   tableRow: {
-    display: 'grid',
-    gridTemplateColumns: '0.5fr 1fr 1fr 1fr 1fr 0.5fr 0.5fr',
-    gap: '1vw',
-    padding: '0 2vw',
+    display: 'flex',
+    borderBottom: '0.1vw solid #edf2f7',
   },
   headerCell: {
-    paddingTop: '1.2vw',
-    paddingBottom: '1.2vw',
-    fontSize: '1vw',
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    color: '#475569',
+    fontWeight: '600',
+    color: '#4a5568',
+    fontSize: '0.9vw',
   },
   tableCell: {
+    padding: '1.2vw 1.5vw',
     display: 'flex',
     alignItems: 'center',
-  },
-  tableBody: {
-    maxHeight: '70vh',
-    overflowY: 'auto',
-  },
-  dataRow: {
-    display: 'grid',
-    gridTemplateColumns: '0.5fr 1fr 1fr 1fr 1fr 0.5fr 0.5fr',
-    gap: '1vw',
-    padding: '1vw 2vw',
-    borderBottom: '1px solid #e2e8f0',
-    transition: 'all 0.2s ease',
+    fontSize: '1vw',
+    color: '#4a5568',
   },
   cellId: {
-    justifyContent: 'center',
+    flex: '0 0 5%',
   },
   cellZone: {
-    justifyContent: 'center',
+    flex: '0 0 15%',
   },
   cellArea: {
-    justifyContent: 'center',
+    flex: '0 0 20%',
   },
   cellSubmitted: {
-    justifyContent: 'center',
+    flex: '0 0 25%',
   },
   cellHissa: {
-    justifyContent: 'center',
+    flex: '0 0 15%',
+    display: 'flex',
+    justifyContent: 'center'
   },
   cellReceipt: {
+    flex: '0 0 10%',
     justifyContent: 'center',
   },
   cellActions: {
+    flex: '0 0 10%',
     justifyContent: 'center',
   },
+  tableBody: {
+    maxHeight: '50vh',
+    overflowY: 'auto',
+  },
+  dataRow: {
+    display: 'flex',
+    borderBottom: '0.1vw solid #edf2f7',
+    transition: 'background-color 0.2s',
+    '&:hover': {
+      backgroundColor: '#f7fafc',
+    }
+  },
   idText: {
-    fontSize: '1vw',
-    fontWeight: 700,
-    color: '#046307',
+    fontWeight: 600,
+    color: '#2d3748',
   },
   zoneText: {
-    fontSize: '1vw',
-    fontWeight: 500,
+    color: '#4a5568',
   },
   areaText: {
-    fontSize: '1vw',
+    color: '#4a5568',
   },
   submittedText: {
-    fontSize: '1vw',
+    color: '#4a5568',
   },
   hissaContainer: {
     display: 'flex',
-    alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
   },
   hissaBadge: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: '#e6fffa',
+    color: '#047481',
     padding: '0.3vw 0.8vw',
-    backgroundColor: '#f0fdf4',
-    color: '#166534',
+    borderRadius: '1vw',
+    fontSize: '0.8vw',
     fontWeight: 600,
-    borderRadius: '2vw',
-    fontSize: '0.9vw',
   },
   btn: {
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
     width: '2.5vw',
     height: '2.5vw',
-    borderRadius: '0.5vw',
+    borderRadius: '0.4vw',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
     border: 'none',
     cursor: 'pointer',
     transition: 'all 0.2s ease',
   },
   btnPrimary: {
-    backgroundColor: '#dcfce7',
-    color: '#166534',
+    backgroundColor: '#e6fffa',
+    color: '#047481',
   },
   btnSecondary: {
-    backgroundColor: '#e0f2fe',
-    color: '#0369a1',
+    backgroundColor: '#ebf8ff',
+    color: '#2b6cb0',
   },
   emptyState: {
+    padding: '5vw 0',
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: '6vw 0',
-    textAlign: 'center',
   },
   emptyIcon: {
     width: '4vw',
     height: '4vw',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#f7fafc',
     borderRadius: '50%',
     display: 'flex',
     alignItems: 'center',
@@ -1265,17 +1267,17 @@ const styles = {
   emptyIconSvg: {
     width: '2vw',
     height: '2vw',
-    color: '#94a3b8',
+    color: '#a0aec0',
   },
   emptyTitle: {
     fontSize: '1.2vw',
     fontWeight: 600,
-    color: '#1e293b',
+    color: '#2d3748',
     marginBottom: '0.5vw',
   },
   emptyText: {
-    fontSize: '0.9vw',
-    color: '#475569',
+    fontSize: '1vw',
+    color: '#718096',
   },
   modalOverlay: {
     position: 'fixed',
@@ -1291,10 +1293,9 @@ const styles = {
   },
   modalContent: {
     backgroundColor: 'white',
-    borderRadius: '0.8vw',
-    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+    borderRadius: '0.6vw',
+    boxShadow: '0 0.5vw 1vw rgba(0, 0, 0, 0.1)',
     width: '80vw',
-    maxWidth: '1200px',
     maxHeight: '90vh',
     overflow: 'hidden',
     display: 'flex',
@@ -1302,7 +1303,7 @@ const styles = {
   },
   modalHeader: {
     padding: '1.5vw',
-    borderBottom: '1px solid #e2e8f0',
+    borderBottom: '0.1vw solid #edf2f7',
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -1310,76 +1311,63 @@ const styles = {
   modalTitle: {
     fontSize: '1.5vw',
     fontWeight: 600,
-    color: '#1e293b',
+    color: '#2d3748',
     margin: 0,
   },
   closeButton: {
     background: 'none',
     border: 'none',
     fontSize: '2vw',
-    color: '#64748b',
+    color: '#a0aec0',
     cursor: 'pointer',
-    padding: '0.5vw',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '0.4vw',
-    transition: 'all 0.2s ease',
   },
   modalBody: {
     padding: '1.5vw',
     overflowY: 'auto',
-    maxHeight: 'calc(90vh - 4vw)',
+    maxHeight: 'calc(90vh - 5vw)',
   },
   recordDetails: {
     display: 'grid',
     gridTemplateColumns: 'repeat(auto-fill, minmax(20vw, 1fr))',
-    gap: '1vw',
+    gap: '1.5vw',
     marginBottom: '2vw',
   },
   recordItem: {
     display: 'flex',
     flexDirection: 'column',
-    gap: '0.3vw',
+    gap: '0.5vw',
   },
   recordLabel: {
     fontSize: '0.9vw',
-    color: '#64748b',
-    fontWeight: 500,
+    color: '#718096',
   },
   recordValue: {
     fontSize: '1.1vw',
-    color: '#1e293b',
     fontWeight: 600,
+    color: '#2d3748',
   },
   recordTable: {
-    border: '1px solid #e2e8f0',
+    border: '0.1vw solid #edf2f7',
     borderRadius: '0.6vw',
     overflow: 'hidden',
   },
   recordTableHeader: {
-    backgroundColor: '#f8fafc',
-    borderBottom: '1px solid #e2e8f0',
+    backgroundColor: '#f7fafc',
+    borderBottom: '0.1vw solid #edf2f7',
   },
   recordTableRow: {
     display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr',
-    gap: '1vw',
-    padding: '1vw',
-    borderBottom: '1px solid #e2e8f0',
-  },
-  recordTableRow: {
-    display: 'grid',
-    gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr',
-    gap: '1vw',
-    padding: '1vw',
-    borderBottom: '1px solid #e2e8f0',
+    gridTemplateColumns: 'repeat(5, 1fr)',
+    borderBottom: '0.1vw solid #edf2f7',
   },
   recordTableCell: {
-    fontSize: '1vw',
+    padding: '1vw',
+    fontSize: '0.9vw',
+    color: '#4a5568',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
+    textAlign: 'center',
   },
   recordTableBody: {
     maxHeight: '30vw',
@@ -1387,15 +1375,14 @@ const styles = {
   },
   formSection: {
     marginBottom: '2vw',
+    backgroundColor: '#f7fafc',
     padding: '1.5vw',
-    backgroundColor: '#f8fafc',
     borderRadius: '0.6vw',
-    border: '1px solid #e2e8f0',
   },
   sectionTitle: {
     fontSize: '1.2vw',
     fontWeight: 600,
-    color: '#1e293b',
+    color: '#2d3748',
     marginTop: 0,
     marginBottom: '1.5vw',
   },
@@ -1412,90 +1399,97 @@ const styles = {
   },
   formLabel: {
     fontSize: '0.9vw',
-    color: '#475569',
+    color: '#4a5568',
     fontWeight: 500,
   },
   formInput: {
     padding: '0.8vw 1vw',
-    backgroundColor: 'white',
-    border: '1px solid #cbd5e1',
     borderRadius: '0.4vw',
-    fontSize: '1vw',
-    color: '#1e293b',
-    transition: 'all 0.2s ease',
+    border: '0.1vw solid #e2e8f0',
+    fontSize: '0.9vw',
+    color: '#2d3748',
+    backgroundColor: 'white',
   },
   inputError: {
-    borderColor: '#ef4444',
-    backgroundColor: '#fef2f2',
-  },
-  inputDisabled: {
-    backgroundColor: '#f1f5f9',
-    color: '#94a3b8',
-    cursor: 'not-allowed',
+    borderColor: '#fc8181',
   },
   errorMessage: {
+    color: '#e53e3e',
     fontSize: '0.8vw',
-    color: '#ef4444',
     marginTop: '0.3vw',
   },
   requiredField: {
-    color: '#ef4444',
+    color: '#e53e3e',
   },
-  imageSection: {
+  imageUploadSection: {
     marginBottom: '1.5vw',
   },
-  imageUploadContainer: {
-    display: 'flex',
-    flexDirection: 'column',
-    alignItems: 'center',
-    gap: '1vw',
-  },
-  imagePreviewContainer: {
+  imagePreview: {
     width: '100%',
     height: '20vw',
-    border: '1px dashed #cbd5e1',
+    border: '0.1vw dashed #cbd5e0',
     borderRadius: '0.6vw',
-    overflow: 'hidden',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#f8fafc',
+    marginBottom: '1vw',
+    backgroundColor: 'white',
+    overflow: 'hidden',
   },
-  imagePreview: {
+  imagePreviewError: {
+    borderColor: '#fc8181',
+    backgroundColor: '#fff5f5',
+  },
+  previewImage: {
     maxWidth: '100%',
     maxHeight: '100%',
     objectFit: 'contain',
   },
-  noImagePlaceholder: {
+  placeholderImage: {
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
     gap: '1vw',
   },
-  noImageIcon: {
+  cameraIconLarge: {
     width: '3vw',
     height: '3vw',
-    color: '#94a3b8',
+    color: '#a0aec0',
   },
-  noImageText: {
+  imageRequiredText: {
     fontSize: '1vw',
-    color: '#64748b',
+    color: '#718096',
   },
-  imageUploadActions: {
+  imageActions: {
     display: 'flex',
     gap: '1vw',
+    justifyContent: 'center',
   },
-  imageUploadBtn: {
-    display: 'inline-flex',
+  imageButton: {
+    display: 'flex',
     alignItems: 'center',
     gap: '0.5vw',
     padding: '0.8vw 1.5vw',
-    backgroundColor: '#f1f5f9',
-    color: '#475569',
+    backgroundColor: '#ebf8ff',
+    color: '#2b6cb0',
+    border: 'none',
+    borderRadius: '0.4vw',
     fontSize: '0.9vw',
     fontWeight: 500,
-    border: '1px solid #e2e8f0',
+    cursor: 'pointer',
+    transition: 'all 0.2s ease',
+  },
+  cameraButton: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '0.5vw',
+    padding: '0.8vw 1.5vw',
+    backgroundColor: '#e6fffa',
+    color: '#047481',
+    border: 'none',
     borderRadius: '0.4vw',
+    fontSize: '0.9vw',
+    fontWeight: 500,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
   },
@@ -1504,93 +1498,99 @@ const styles = {
     justifyContent: 'center',
     marginTop: '1.5vw',
   },
-  submitBtn: {
+  submitButton: {
     padding: '1vw 3vw',
     backgroundColor: '#046307',
     color: 'white',
-    fontSize: '1vw',
-    fontWeight: 600,
     border: 'none',
     borderRadius: '0.4vw',
+    fontSize: '1vw',
+    fontWeight: 600,
     cursor: 'pointer',
     transition: 'all 0.2s ease',
   },
-  submitBtnDisabled: {
-    backgroundColor: '#94a3b8',
+  btnDisabled: {
+    backgroundColor: '#cbd5e0',
     cursor: 'not-allowed',
-    transform: 'none !important',
-    boxShadow: 'none !important',
   },
-  transactionSection: {
-    marginTop: '2vw',
-  },
-  transactionList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '1vw',
-  },
-  transactionCard: {
-    border: '1px solid #e2e8f0',
+  receiptTableContainer: {
+    marginBottom: '2vw',
+    border: '0.1vw solid #e2e8f0',
     borderRadius: '0.6vw',
     overflow: 'hidden',
   },
-  transactionHeader: {
-    padding: '1vw',
-    backgroundColor: '#f8fafc',
-    borderBottom: '1px solid #e2e8f0',
-    display: 'flex',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  receiptTableHeader: {
+    backgroundColor: '#f7fafc',
+    borderBottom: '0.1vw solid #e2e8f0',
   },
-  transactionDate: {
-    fontSize: '0.9vw',
-    color: '#64748b',
-  },
-  transactionAmount: {
-    fontSize: '1.1vw',
-    fontWeight: 600,
-    color: '#046307',
-  },
-  transactionDetails: {
-    padding: '1vw',
+  receiptTableRow: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(3, 1fr)',
-    gap: '1vw',
+    gridTemplateColumns: 'repeat(11, 1fr)',
+    borderBottom: '0.1vw solid #e2e8f0',
   },
-  transactionItem: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.3vw',
-  },
-  transactionLabel: {
+  receiptTableHeaderCell: {
+    padding: '1vw 0.5vw',
     fontSize: '0.8vw',
-    color: '#64748b',
+    fontWeight: 600,
+    color: '#4a5568',
+    textAlign: 'center',
   },
-  transactionValue: {
-    fontSize: '0.9vw',
-    color: '#1e293b',
-    fontWeight: 500,
+  receiptTableCell: {
+    padding: '0.8vw 0.5vw',
+    fontSize: '0.8vw',
+    color: '#4a5568',
+    textAlign: 'center',
+    whiteSpace: 'nowrap',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
   },
-  transactionImageContainer: {
-    padding: '1vw',
-    borderTop: '1px solid #e2e8f0',
-    display: 'flex',
-    justifyContent: 'center',
+  receiptTableBody: {
+    maxHeight: '20vw',
+    overflowY: 'auto',
   },
-  transactionImage: {
-    maxWidth: '100%',
-    maxHeight: '15vw',
-    objectFit: 'contain',
-    borderRadius: '0.4vw',
+  receiptTableFooter: {
+    backgroundColor: '#f7fafc',
+    borderTop: '0.1vw solid #e2e8f0',
   },
-  noTransactionsMessage: {
+  receiptTableFooterCell: {
+    padding: '1vw 0.5vw',
+    fontSize: '0.8vw',
+    fontWeight: 600,
+    color: '#4a5568',
+    textAlign: 'center',
+  },
+  noData: {
     padding: '3vw',
     textAlign: 'center',
-    color: '#64748b',
+    color: '#a0aec0',
     fontSize: '1vw',
-    backgroundColor: '#f8fafc',
+  },
+  transactionLogSection: {
+    marginTop: '2vw',
+  },
+  transactionTable: {
+    border: '0.1vw solid #e2e8f0',
     borderRadius: '0.6vw',
-    border: '1px solid #e2e8f0',
+    overflow: 'hidden',
+  },
+  transactionTableHeader: {
+    backgroundColor: '#f7fafc',
+    borderBottom: '0.1vw solid #e2e8f0',
+  },
+  transactionTableRow: {
+    display: 'grid',
+    gridTemplateColumns: 'repeat(5, 1fr)',
+    borderBottom: '0.1vw solid #e2e8f0',
+  },
+  transactionTableCell: {
+    padding: '1vw',
+    fontSize: '0.9vw',
+    color: '#4a5568',
+    textAlign: 'center',
+  },
+  transactionTableBody: {
+    maxHeight: '20vw',
+    overflowY: 'auto',
   },
 };
 
