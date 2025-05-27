@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react';
-import { Lock, Unlock, RefreshCw } from 'lucide-react';
+import { Lock, Unlock, RefreshCw, Edit, Save } from 'lucide-react';
 import './style.css';
 import axios from 'axios';
 
@@ -20,6 +20,13 @@ const Dashboard = () => {
     pending: 0
   });
 
+  // New state for editing costs
+  const [isEditingMumbai, setIsEditingMumbai] = useState(false);
+  const [isEditingOOM, setIsEditingOOM] = useState(false);
+  const [mumbaiCostInput, setMumbaiCostInput] = useState('');
+  const [oomCostInput, setOomCostInput] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+
   // Fetch all data
   const fetchAllData = async () => {
     try {
@@ -36,16 +43,85 @@ const Dashboard = () => {
       params: { name: 'superadmin', password: 'super123' }
     });
     if (response.data.success) {
+      const fullMaCost = parseFloat(response.data.data.m_a_cost);
+      const fullOomCost = parseFloat(response.data.data.oom_a_cost);
+      
       setAdminData({
-        m_a_cost: parseFloat(response.data.data.m_a_cost) / 7,
-        oom_a_cost: parseFloat(response.data.data.oom_a_cost) / 7
+        m_a_cost: fullMaCost / 7,
+        oom_a_cost: fullOomCost / 7
       });
+      
+      // Update input values with full costs
+      setMumbaiCostInput(fullMaCost.toString());
+      setOomCostInput(fullOomCost.toString());
     }
   };
 
   const fetchCustomerData = async () => {
     const response = await axios.get('/api/customers?user_id=0');
     setCustomerData(response.data);
+  };
+
+  // Update cost via API
+  const updateCost = async (costType, value) => {
+    setIsSaving(true);
+    try {
+      const updateData = {};
+      updateData[costType] = parseFloat(value);
+      
+      const response = await axios.put('/api/superadmin', updateData);
+      
+      if (response.data.success) {
+        // Refresh admin data to get updated values
+        await fetchAdminData();
+        
+        // Reset editing state
+        if (costType === 'm_a_cost') {
+          setIsEditingMumbai(false);
+        } else {
+          setIsEditingOOM(false);
+        }
+        
+        console.log('Cost updated successfully');
+      }
+    } catch (error) {
+      console.error('Error updating cost:', error);
+      alert('Failed to update cost. Please try again.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle edit button click
+  const handleEdit = (costType) => {
+    if (costType === 'm_a_cost') {
+      setIsEditingMumbai(true);
+    } else {
+      setIsEditingOOM(true);
+    }
+  };
+
+  // Handle save button click
+  const handleSave = (costType) => {
+    const value = costType === 'm_a_cost' ? mumbaiCostInput : oomCostInput;
+    
+    if (!value || isNaN(value) || parseFloat(value) < 0) {
+      alert('Please enter a valid positive number');
+      return;
+    }
+    
+    updateCost(costType, value);
+  };
+
+  // Handle cancel edit
+  const handleCancel = (costType) => {
+    if (costType === 'm_a_cost') {
+      setIsEditingMumbai(false);
+      setMumbaiCostInput((adminData.m_a_cost * 7).toString());
+    } else {
+      setIsEditingOOM(false);
+      setOomCostInput((adminData.oom_a_cost * 7).toString());
+    }
   };
 
   // Initial load
@@ -158,13 +234,93 @@ const Dashboard = () => {
         </div>
       </div>
 
-          <div className="cost-info">
-            <span>Mumbai: ₹{adminData.m_a_cost.toLocaleString()}</span>
-            <span>Out of Mumbai: ₹{adminData.oom_a_cost.toLocaleString()}</span>
-            <span>Total: {formatCurrency(combinedTotals.total)}</span>
-            <span>Paid: {formatCurrency(combinedTotals.paid)}</span>
-            <span>Pending: {formatCurrency(combinedTotals.pending)}</span>
-          </div>
+      <div className='cost-info-input'>
+        <span>
+          Mumbai animal cost: 
+          <input 
+            type="text" 
+            value={mumbaiCostInput}
+            onChange={(e) => setMumbaiCostInput(e.target.value)}
+            disabled={!isEditingMumbai || isSaving}
+            className={isEditingMumbai ? 'editing' : ''}
+          />
+          {isEditingMumbai ? (
+            <div className="input-actions">
+              <button 
+                onClick={() => handleSave('m_a_cost')}
+                disabled={isSaving}
+                className="save-btn"
+                title="Save"
+              >
+                <Save size={14} />
+              </button>
+              <button 
+                onClick={() => handleCancel('m_a_cost')}
+                disabled={isSaving}
+                className="cancel-btn"
+                title="Cancel"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => handleEdit('m_a_cost')}
+              className="edit-btn"
+              title="Edit"
+            >
+              <Edit size={14} />
+            </button>
+          )}
+        </span>
+        
+        <span>
+          Out of Mumbai animal cost: 
+          <input 
+            type="text" 
+            value={oomCostInput}
+            onChange={(e) => setOomCostInput(e.target.value)}
+            disabled={!isEditingOOM || isSaving}
+            className={isEditingOOM ? 'editing' : ''}
+          />
+          {isEditingOOM ? (
+            <div className="input-actions">
+              <button 
+                onClick={() => handleSave('oom_a_cost')}
+                disabled={isSaving}
+                className="save-btn"
+                title="Save"
+              >
+                <Save size={14} />
+              </button>
+              <button 
+                onClick={() => handleCancel('oom_a_cost')}
+                disabled={isSaving}
+                className="cancel-btn"
+                title="Cancel"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <button 
+              onClick={() => handleEdit('oom_a_cost')}
+              className="edit-btn"
+              title="Edit"
+            >
+              <Edit size={14} />
+            </button>
+          )}
+        </span>
+      </div>
+
+      <div className="cost-info">
+        <span>Rupees/Share (Mumbai): ₹{adminData.m_a_cost.toLocaleString()}</span>
+        <span>Rupees/Share (Out of Mumbai): ₹{adminData.oom_a_cost.toLocaleString()}</span>
+        <span>Total: {formatCurrency(combinedTotals.total)}</span>
+        <span>Paid: {formatCurrency(combinedTotals.paid)}</span>
+        <span>Pending: {formatCurrency(combinedTotals.pending)}</span>
+      </div>
 
       <div className="dashboard-cards-container">
         <div className="dashboard-cards-grid">

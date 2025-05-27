@@ -10,7 +10,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1vw 2vw;
+  padding: 0vw 1vw 1vw 2vw;
   flex-wrap: wrap;
   gap: 2vw;
 }
@@ -45,6 +45,99 @@
   background: rgba(255, 255, 255, 0.7);
   padding: 0.5vw 1vw;
   border-radius: 0.5vw;
+}
+
+.cost-info-input {
+  display: flex;
+  gap: 1.5vw;
+  font-size: 1vw;
+  color: #4b5563;
+  padding: 0 2vw 0.8vw 2vw ;
+}
+
+.cost-info-input span {
+  background: rgba(255, 255, 255, 0.7);
+  padding: 0.5vw 1vw;
+  border-radius: 0.5vw;
+  display: flex;
+  align-items: center;
+  gap: 0.5vw;
+}
+
+.cost-info-input span input {
+  outline: none;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.3vw;
+  padding: 0.3vw 0.5vw;
+  font-size: 0.9vw;
+  transition: all 0.2s ease;
+}
+
+.cost-info-input span input:disabled {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.cost-info-input span input.editing {
+  border-color: #046307;
+  background-color: #f0f9ff;
+}
+
+.input-actions {
+  display: flex;
+  gap: 0.3vw;
+}
+
+.edit-btn, .save-btn, .cancel-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2vw;
+  height: 2vw;
+  border: none;
+  border-radius: 0.3vw;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.8vw;
+}
+
+.edit-btn {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.edit-btn:hover {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+
+.save-btn {
+  background-color: #046307;
+  color: white;
+}
+
+.save-btn:hover:not(:disabled) {
+  background-color: #065f46;
+}
+
+.save-btn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  background-color: #ef4444;
+  color: white;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.cancel-btn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
 }
 
 /* Button Styles */
