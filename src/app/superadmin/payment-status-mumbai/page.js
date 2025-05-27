@@ -118,10 +118,93 @@ const SummaryTable = () => {
   );
 
   // Export to Excel
-  const exportToExcel = () => {
-    console.log('Exporting to Excel...');
-    // Implementation would go here
-  };
+const exportToExcel = () => {
+  try {
+    // Import xlsx library
+    const XLSX = require('xlsx');
+    
+    // Create a new workbook
+    const workbook = XLSX.utils.book_new();
+    
+    // Prepare headers to match UI table structure
+    const headers = [
+      'Sr no.',
+      'NIGRA',
+      'AREA',
+      'ZONE',
+      'TOTAL HISSA',
+      'TOTAL AMOUNT',
+      'PAID HISSA',
+      'PAID AMOUNT',
+      'PENDING',
+      'PENDING AMOUNT'
+    ];
+    
+    // Prepare data rows from filteredData
+    const data = filteredData.map(item => [
+      item.id,
+      item.username,
+      item.area_name,
+      item.zone_name,
+      item.total_hissa,
+      `₹${item.total_amount}`,
+      item.paid_hissa,
+      `₹${item.paid_amount}`,
+      item.pending_hissa,
+      `₹${item.pending_amount}`
+    ]);
+    
+    // Add totals row at the bottom
+    const totalsRow = [
+      '',
+      '',
+      '',
+      'TOTALS:',
+      filteredData.reduce((sum, item) => sum + item.total_hissa, 0),
+      `₹${filteredData.reduce((sum, item) => sum + item.total_amount, 0)}`,
+      filteredData.reduce((sum, item) => sum + item.paid_hissa, 0),
+      `₹${filteredData.reduce((sum, item) => sum + item.paid_amount, 0)}`,
+      filteredData.reduce((sum, item) => sum + item.pending_hissa, 0),
+      `₹${filteredData.reduce((sum, item) => sum + item.pending_amount, 0)}`
+    ];
+    
+    // Combine headers, data, and totals
+    const worksheet_data = [headers, ...data, totalsRow];
+    
+    // Create worksheet
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheet_data);
+    
+    // Set column widths to improve readability
+    const columnWidths = [
+      { wch: 8 },  // Sr no.
+      { wch: 20 }, // NIGRA
+      { wch: 20 }, // AREA
+      { wch: 15 }, // ZONE
+      { wch: 12 }, // TOTAL HISSA
+      { wch: 15 }, // TOTAL AMOUNT
+      { wch: 12 }, // PAID HISSA
+      { wch: 15 }, // PAID AMOUNT
+      { wch: 12 }, // PENDING
+      { wch: 15 }  // PENDING AMOUNT
+    ];
+    worksheet['!cols'] = columnWidths;
+    
+    // Add the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Mumbai Payment Summary');
+    
+    // Generate Excel file name with current date
+    const date = new Date();
+    const fileName = `Mumbai_Payment_Summary_${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}.xlsx`;
+    
+    // Write the workbook and trigger download
+    XLSX.writeFile(workbook, fileName);
+    
+    console.log(`Excel file "${fileName}" exported successfully`);
+  } catch (error) {
+    console.error('Error exporting to Excel:', error);
+    alert('Failed to export data to Excel');
+  }
+};
 
   return (
     <div style={styles.container}>
