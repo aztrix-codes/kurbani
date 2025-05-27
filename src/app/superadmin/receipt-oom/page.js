@@ -9,6 +9,7 @@ const DataTable = () => {
   const [users, setUsers] = useState([]);
   const [customerData, setCustomerData] = useState([]);
   const [receipts, setReceipts] = useState([]);
+  const [userID, setUserID] = useState(0)
   
   // Modal states
   const [showEyeModal, setShowEyeModal] = useState(false);
@@ -60,7 +61,7 @@ const DataTable = () => {
 
   const fetchReceipts = async () => {
     try {
-      const response = await axios.get(`/api/receipt?user_id=6`);
+      const response = await axios.get(`/api/receipt?user_id=${userID}`);
       setReceipts(response.data);
       console.log(response.data)
     } catch (err) {
@@ -201,7 +202,7 @@ const DataTable = () => {
 
   // Handle opening receipt modal
   const handleReceiptClick = (rowId, rowData, item) => {
-    console.log("Receipt click - item:", item);
+    setUserID(item.user_id)
     fetchReceipts();
     fetchAdminData(); // Refresh admin data when opening receipt modal
     setSelectedRowId(rowId);
