@@ -408,8 +408,10 @@ const DataTable = () => {
     console.log('Exporting to Excel...');
   };
 
-  const filteredData = users.filter(item =>
-    Object.values(item).some(val =>
+  const filteredData = users
+  .filter(item => item.mumbai === 1)
+  .filter(item => 
+    Object.values(item).some(val => 
       String(val).toLowerCase().includes(searchTerm.toLowerCase())
     )
   );
@@ -438,13 +440,13 @@ const DataTable = () => {
               </div>
               
               {/* Export Button */}
-              <button 
+              {/* <button 
                 onClick={exportToExcel}
                 style={styles.exportBtn}
               >
                 <DownloadIcon style={styles.btnIcon} />
                 Export
-              </button>
+              </button> */}
             </div>
           </div>
           
