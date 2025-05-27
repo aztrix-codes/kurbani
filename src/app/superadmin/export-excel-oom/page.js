@@ -3,8 +3,19 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import * as XLSX from 'xlsx';
+import { useRouter } from 'next/navigation';
 
 const DataTable = () => {
+
+  const router = useRouter()
+  
+    useEffect(() => {
+      const isLoggedIn = localStorage.getItem('superAdminLoggedIn') === 'true';
+      if (!isLoggedIn) {
+        router.replace('/auth/superadmin');
+      }
+    }, [router]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [customerData, setCustomerData] = useState([]);
   const [areasList, setAreasList] = useState([]);

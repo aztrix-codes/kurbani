@@ -42,7 +42,7 @@ function Page() {
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userData'));
     if (!userData || (userData.userId === 0 && userData.isAuthenticated === false && userData.status === 0)) {
-      router.replace('/auth/user');
+      router.replace('/');
     } else {
       fetchData();
     }

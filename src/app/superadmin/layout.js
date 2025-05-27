@@ -8,6 +8,7 @@ export default function AdminLayout({ children }) {
   const pathname = usePathname()
   const router = useRouter()
 
+
   const links = [
     {title: "Home", path: 'dashboard'},
     {title: "Generate Receipt - Mumbai", path: 'receipt-mumbai'},
@@ -17,6 +18,13 @@ export default function AdminLayout({ children }) {
     {title: "Payment Status - Mumbai", path: 'payment-status-mumbai'},
     {title: "Payment Status - Out of Mumbai", path: 'payment-status-oom'},
   ]
+
+  const handleLogout = () => {
+  localStorage.removeItem('superAdminLoggedIn');
+  localStorage.removeItem('superAdminUsername');
+  localStorage.removeItem('superAdminPassword');
+  router.replace('/auth/superadmin');
+};
 
 
   return (
@@ -39,7 +47,7 @@ export default function AdminLayout({ children }) {
         </div>
         
         <div className="nav-footer">
-          <button className="logout-button">
+          <button className="logout-button" onClick={handleLogout} >
             <img src='https://img.icons8.com/?size=100&id=59995&format=png&color=ffffff' alt="Logout" />
           </button>
         </div>

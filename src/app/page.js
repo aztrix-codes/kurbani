@@ -1,19 +1,116 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function Home() {
-  const [hoveredButton, setHoveredButton] = useState(null);
-  const [isClient, setIsClient] = useState(false);
+function UserLoginPage() {
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [buttonHovered, setButtonHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
 
+  // Check screen size for mobile responsiveness
   useEffect(() => {
-    setIsClient(true);
+    const handleResize = () => setIsMobile(window.innerWidth <= 768);
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  const handleNavigation = (path) => {
-    router.push(`/auth/${path}`);
+  // Auto login on mount if credentials exist
+  useEffect(() => {
+    const userData = JSON.parse(localStorage.getItem('userData'));
+    const storedIdentifier = localStorage.getItem('identifier');
+    const storedPassword = localStorage.getItem('password');
+
+    if (userData?.isAuthenticated && userData?.status === 1 && storedIdentifier && storedPassword) {
+      autoLogin(storedIdentifier, storedPassword);
+    }
+  }, []);
+
+  const autoLogin = async (storedIdentifier, storedPassword) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const response = await fetch(
+        `/api/users/user?phoneOrEmail=${encodeURIComponent(storedIdentifier)}&password=${encodeURIComponent(storedPassword)}`
+      );
+      const data = await response.json();
+
+      if (response.ok && data.status === 1) {
+        localStorage.setItem('userData', JSON.stringify({
+          userId: data.user_id,
+          isAuthenticated: true,
+          status: data.status,
+          name: data.username,
+          img: data.img_url,
+          m: data.mumbai,
+          oom: data.out_of_mumbai
+        }));
+        router.replace('/user');
+      } else {
+        // Clear stored credentials if auto login fails
+        localStorage.removeItem('identifier');
+        localStorage.removeItem('password');
+        localStorage.removeItem('userData');
+        setError('Auto login failed. Please login manually.');
+      }
+    } catch (err) {
+      console.error('Auto login error:', err);
+      setError('Network error during auto login. Please login manually.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    
+    if (!identifier || !password) {
+      setError('Please enter both identifier and password');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await fetch(
+        `/api/users/user?phoneOrEmail=${encodeURIComponent(identifier)}&password=${encodeURIComponent(password)}`
+      );
+      
+      const data = await response.json();
+
+      if (response.ok) {
+        if (data.status === 1) {
+          localStorage.setItem('userData', JSON.stringify({
+            userId: data.user_id,
+            isAuthenticated: true,
+            status: data.status,
+            name: data.username,
+            img: data.img_url,
+            m: data.mumbai,
+            oom: data.out_of_mumbai
+          }));
+          // Store credentials for auto login
+          localStorage.setItem('identifier', identifier);
+          localStorage.setItem('password', password);
+          router.replace('/user');
+        } else {
+          setError('Your account is deactivated. Please contact support.');
+        }
+      } else {
+        setError(data.error || 'Login failed. Please try again.');
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const styles = {
@@ -24,42 +121,37 @@ export default function Home() {
       margin: 0,
       padding: 0,
       overflow: 'hidden',
-      flexDirection: 'row-reverse',
+      flexDirection: isMobile ? 'column' : 'row-reverse',
+      backgroundColor: isMobile ? '#046307' : 'transparent',
+      position: 'relative'
     },
     leftPanel: {
-      width: '50%',
+      width: isMobile ? '0%' : '50%',
       height: '100%',
       backgroundColor: '#046307',
-      display: 'flex',
+      display: isMobile ? 'none' : 'flex',
       justifyContent: 'center',
       alignItems: 'center',
       position: 'relative'
     },
     rightPanel: {
-      width: '50%',
-      height: '100%',
+      width: isMobile ? '100%' : '50%',
+      height: isMobile ? '100%' : '100%',
       display: 'flex',
       justifyContent: 'center',
       alignItems: 'center',
-      backgroundColor: '#f8fafc'
+      backgroundColor: isMobile ? 'transparent' : '#f8fafc',
+      position: 'relative'
     },
-    backgroundCircle1: {
-      position: 'absolute',
-      width: '300px',
-      height: '300px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      top: '10%',
-      left: '10%'
-    },
-    backgroundCircle2: {
-      position: 'absolute',
-      width: '400px',
-      height: '400px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      bottom: '10%',
-      right: '5%'
+    formContainer: {
+      width: isMobile ? '90%' : '70%',
+      maxWidth: '450px',
+      padding: isMobile ? '30px' : '40px',
+      borderRadius: '1rem',
+      backgroundColor: 'white',
+      boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)',
+      margin: isMobile ? '0 auto' : '0',
+      transform: isMobile ? 'translateY(0)' : 'none'
     },
     leftPanelContent: {
       color: 'white',
@@ -77,14 +169,6 @@ export default function Home() {
       opacity: 0.9,
       lineHeight: 1.6
     },
-    formContainer: {
-      width: '70%',
-      maxWidth: '450px',
-      padding: '40px',
-      borderRadius: '1rem',
-      backgroundColor: 'white',
-      boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)'
-    },
     formTitle: {
       fontSize: '28px',
       color: '#333',
@@ -92,14 +176,30 @@ export default function Home() {
       textAlign: 'center',
       fontWeight: 'bold'
     },
-    buttonContainer: {
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '20px'
+    formGroup: {
+      marginBottom: '20px'
     },
-    button: {
+    formLabel: {
+      display: 'block',
+      marginBottom: '8px',
+      fontSize: '14px',
+      fontWeight: '500',
+      color: '#333'
+    },
+    formInput: {
       width: '100%',
-      padding: '16px',
+      padding: '12px 15px',
+      fontSize: '16px',
+      borderRadius: '1rem',
+      border: '1px solid #ddd',
+      outline: 'none',
+      transition: 'border-color 0.2s',
+      boxSizing: 'border-box',
+      color: "#333",
+    },
+    submitButton: {
+      width: '100%',
+      padding: '14px',
       backgroundColor: '#046307',
       color: 'white',
       border: 'none',
@@ -107,13 +207,37 @@ export default function Home() {
       fontSize: '16px',
       fontWeight: '500',
       cursor: 'pointer',
-      transition: 'all 0.3s ease',
-      boxShadow: '0 2px 5px rgba(0, 0, 0, 0.1)'
+      transition: 'background-color 0.2s',
+      marginTop: '10px'
     },
-    buttonHovered: {
-      backgroundColor: '#034d05',
-      transform: 'translateY(-2px)',
-      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.15)'
+    submitButtonHover: {
+      backgroundColor: '#034d05'
+    },
+    errorText: {
+      color: '#e74c3c',
+      fontSize: '14px',
+      marginTop: '10px',
+      textAlign: 'center'
+    },
+    backgroundCircle1: {
+      position: 'absolute',
+      width: '300px',
+      height: '300px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      top: '10%',
+      left: '10%',
+      display: isMobile ? 'none' : 'block'
+    },
+    backgroundCircle2: {
+      position: 'absolute',
+      width: '400px',
+      height: '400px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      bottom: '10%',
+      right: '5%',
+      display: isMobile ? 'none' : 'block'
     },
     backgroundCircle3: {
       position: 'absolute',
@@ -135,66 +259,58 @@ export default function Home() {
     },
   };
 
-  // Only apply media queries on client side
-  if (isClient) {
-    const responsiveStyles = (() => {
-      if (window.innerWidth <= 768) {
-        return {
-          mainContainer: {
-            flexDirection: 'column',
-            background: '#046307' // This sets the mobile background to green
-          },
-          leftPanel: {
-            display: 'none' // Hide the left panel on mobile
-          },
-          rightPanel: {
-            width: '100%',
-            height: '100%',
-            background: 'transparent' // Make right panel transparent to show green background
-          },
-          formContainer: {
-            width: '85%',
-            padding: '30px'
-          }
-        };
-      }
-      return {};
-    })();
-
-    Object.keys(responsiveStyles).forEach(key => {
-      if (styles[key]) {
-        styles[key] = { ...styles[key], ...responsiveStyles[key] };
-      }
-    });
-  }
-
   return (
     <div style={styles.mainContainer}>
+      {/* Right Panel - Login Form */}
       <div style={styles.rightPanel}>
         <div style={styles.backgroundCircle3}></div>
         <div style={styles.backgroundCircle4}></div>
         <div style={styles.formContainer}>
-          <h2 style={styles.formTitle}>Select Login Type</h2>
+          <h2 style={styles.formTitle}>User Login</h2>
           
-          <div style={styles.buttonContainer}>
-            <button
-              style={hoveredButton === "admin" ? {...styles.button, ...styles.buttonHovered} : styles.button}
-              onMouseEnter={() => setHoveredButton("admin")}
-              onMouseLeave={() => setHoveredButton(null)}
-              onClick={() => handleNavigation("admin")}
-            >
-              Admin Login
-            </button>
+          <form onSubmit={handleSubmit}>
+            <div style={styles.formGroup}>
+              <label style={styles.formLabel} htmlFor="identifier">
+                Email / Phone
+              </label>
+              <input
+                style={styles.formInput }               
+                type="text"
+                id="identifier"
+                placeholder="Enter your email or phone"
+                value={identifier}
+                onChange={(e) => setIdentifier(e.target.value.replace(/\s/g, ''))}
+                required
+              />
+            </div>
+            
+            <div style={styles.formGroup}>
+              <label style={styles.formLabel} htmlFor="password">
+                Password
+              </label>
+              <input
+                style={styles.formInput}
+                type="password"
+                id="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value.replace(/\s/g, ''))}
+                required
+              />
+            </div>
             
             <button
-              style={hoveredButton === "user" ? {...styles.button, ...styles.buttonHovered} : styles.button}
-              onMouseEnter={() => setHoveredButton("user")}
-              onMouseLeave={() => setHoveredButton(null)}
-              onClick={() => handleNavigation("user")}
+              style={buttonHovered ? {...styles.submitButton, ...styles.submitButtonHover} : styles.submitButton}
+              type="submit"
+              disabled={isLoading}
+              onMouseEnter={() => setButtonHovered(true)}
+              onMouseLeave={() => setButtonHovered(false)}
             >
-              User Login
+              {isLoading ? 'Logging in...' : 'Login'}
             </button>
-          </div>
+            
+            {error && <p style={styles.errorText}>{error}</p>}
+          </form>
         </div>
       </div>
 
@@ -203,12 +319,14 @@ export default function Home() {
         <div style={styles.backgroundCircle1}></div>
         <div style={styles.backgroundCircle2}></div>
         <div style={styles.leftPanelContent}>
-          <h1 style={styles.brandTitle}>Welcome</h1>
+          <h1 style={styles.brandTitle}>Welcome Back</h1>
           <p style={styles.brandSubtitle}>
-            Select your login type to access your account and continue your journey with us.
+            Sign in to access your account and continue your journey with us.
           </p>
         </div>
       </div>
     </div>
   );
 }
+
+export default UserLoginPage;

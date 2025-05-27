@@ -2,8 +2,19 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 const DataTable = () => {
+
+  const router = useRouter()
+  
+    useEffect(() => {
+      const isLoggedIn = localStorage.getItem('superAdminLoggedIn') === 'true';
+      if (!isLoggedIn) {
+        router.replace('/auth/superadmin');
+      }
+    }, [router]);
+
   const [searchTerm, setSearchTerm] = useState('');
   const [areasList, setAreasList] = useState([]);
   const [users, setUsers] = useState([]);
@@ -42,9 +53,11 @@ const DataTable = () => {
   
   // Fetch admin data for cost per share
   const fetchAdminData = async () => {
+    const username = localStorage.getItem('superAdminUsername');
+    const password = localStorage.getItem('superAdminPassword');
     try {
       const response = await axios.get('/api/superadmin', {
-        params: { name: 'superadmin', password: 'super123' }
+        params: { name: username, password: password }
       });
       if (response.data.success) {
         setAdminData({

@@ -38,7 +38,7 @@ export default function QurbaniApp() {
         setLocation('Out of Mumbai');
       }
     } else{
-      router.replace('/auth/user');
+      router.replace('/');
     }
   }, [router]);
 

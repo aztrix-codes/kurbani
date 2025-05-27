@@ -41,7 +41,7 @@ export default function DataTable() {
       userData.isAuthenticated === false &&
       userData.status === 0
     ) {
-      router.replace('/auth/user');
+      router.replace('/');
     } else {
       fetchData();
     }

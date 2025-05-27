@@ -4,8 +4,20 @@ import React, { useState, useEffect } from 'react';
 import { Lock, Unlock, RefreshCw, Edit, Save } from 'lucide-react';
 import './style.css';
 import axios from 'axios';
+import { useRouter } from 'next/navigation';
 
 const Dashboard = () => {
+
+  const router = useRouter()
+
+  useEffect(() => {
+  const isLoggedIn = localStorage.getItem('superAdminLoggedIn') === 'true';
+  if (!isLoggedIn) {
+    router.replace('/auth/superadmin');
+  }
+}, [router]);
+
+
   const [isLocked, setIsLocked] = useState(false);
   const [isUpdatingLock, setIsUpdatingLock] = useState(false);
   const [adminData, setAdminData] = useState({ 
@@ -41,8 +53,11 @@ const Dashboard = () => {
   };
 
   const fetchAdminData = async () => {
+    const username = localStorage.getItem('superAdminUsername');
+    const password = localStorage.getItem('superAdminPassword');
+
     const response = await axios.get('/api/superadmin', {
-      params: { name: 'superadmin', password: 'super123' }
+      params: { name: username, password: password }
     });
     if (response.data.success) {
       const fullMaCost = parseFloat(response.data.data.m_a_cost);
@@ -122,12 +137,14 @@ const Dashboard = () => {
 
   // Update lock status via API
   const updateLockStatus = async (lockStatus) => {
+    const username = localStorage.getItem('superAdminUsername');
+    const password = localStorage.getItem('superAdminPassword');
     setIsUpdatingLock(true);
     try {
       const response = await axios.patch('/api/superadmin', {
         lockall: lockStatus,
-        name: 'superadmin',
-        password: 'super123'
+        name: username,
+        password: password
       });
       
       if (response.data.success) {

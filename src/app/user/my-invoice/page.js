@@ -1,292 +1,395 @@
 'use client'
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, ArrowLeft, Printer, Search, X } from 'lucide-react';
+import { Download, Search, X, FileText, Check } from 'lucide-react';
 import axios from 'axios';
+import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import './style.css';
 import Shimmer from '@/app/Shimmer';
 
 export default function InvoicePage() {
   const router = useRouter();
-  const [invoices, setInvoices] = useState([]);
-  const [filteredInvoices, setFilteredInvoices] = useState([]);
+  const [receipts, setReceipts] = useState([]);
+  const [filteredReceipts, setFilteredReceipts] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
-  const [selectedInvoice, setSelectedInvoice] = useState(null);
+  const [selectedReceipt, setSelectedReceipt] = useState(null);
+  const [notification, setNotification] = useState(null);
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userData'));
     if (userData?.userId === 0 && !userData?.isAuthenticated) {
-      router.replace('/auth/user');
+      router.replace('/');
     } else {
-      fetchInvoices();
+      fetchReceipts();
     }
   }, [router]);
 
-  const fetchInvoices = async () => {
+  const fetchReceipts = async () => {
     try {
       setIsLoading(true);
       const userData = JSON.parse(localStorage.getItem('userData'));
-      const response = await axios.get(`/api/invoices?user_id=${userData.userId}`);
-      setInvoices(response.data);
-      setFilteredInvoices(response.data);
+      const response = await axios.get(`/api/receipt?user_id=${userData.userId}`);
+      
+      if (Array.isArray(response.data)) {
+        setReceipts(response.data);
+        setFilteredReceipts(response.data);
+      } else {
+        console.error('Unexpected response format:', response.data);
+        setReceipts([]);
+        setFilteredReceipts([]);
+      }
     } catch (error) {
-      console.error('Error fetching invoices:', error);
+      console.error('Error fetching receipts:', error);
+      setReceipts([]);
+      setFilteredReceipts([]);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    const results = invoices.filter(invoice => 
-      invoice.receiptNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invoice.date.includes(searchTerm)
+    const results = receipts.filter(receipt => 
+      (receipt.id && receipt.id.toString().includes(searchTerm.toLowerCase())) ||
+      (receipt.zone && receipt.zone.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (receipt.area && receipt.area.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (receipt.purpose && receipt.purpose.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (receipt.paid_by && receipt.paid_by.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (receipt.created_at && receipt.created_at.includes(searchTerm))
     );
-    setFilteredInvoices(results);
-  }, [searchTerm, invoices]);
+    setFilteredReceipts(results);
+  }, [searchTerm, receipts]);
 
-  const generatePDF = (invoice) => {
-    const doc = new jsPDF();
-    
-    // Add logo or header
-    doc.setFontSize(20);
-    doc.setTextColor(40, 53, 147);
-    doc.text('Qurbani Management System', 105, 20, { align: 'center' });
-    
-    doc.setFontSize(16);
-    doc.setTextColor(0, 0, 0);
-    doc.text('INVOICE', 105, 30, { align: 'center' });
-    
-    // Invoice details
-    doc.setFontSize(12);
-    doc.text(`Receipt #: ${invoice.receiptNumber}`, 20, 45);
-    doc.text(`Date: ${invoice.date}`, 20, 55);
-    doc.text(`Customer: ${invoice.customerName}`, 20, 65);
-    
-    // Table header
-    doc.setFillColor(59, 130, 246);
-    doc.setTextColor(255, 255, 255);
-    doc.rect(20, 75, 170, 10, 'F');
-    doc.text('Type', 30, 82);
-    doc.text('Name', 80, 82);
-    doc.text('Amount', 150, 82);
-    
-    // Table rows
-    doc.setFillColor(255, 255, 255);
-    doc.setTextColor(0, 0, 0);
-    let y = 90;
-    
-    invoice.items.forEach(item => {
-      doc.text(item.type, 30, y);
-      doc.text(item.name, 80, y);
-      doc.text(`$${item.amount}`, 150, y);
-      y += 10;
-    });
-    
-    // Total
-    doc.setFontSize(14);
-    doc.text(`Total: $${invoice.total}`, 150, y + 10);
-    
-    // Footer
-    doc.setFontSize(10);
-    doc.setTextColor(100, 100, 100);
-    doc.text('Thank you for your payment!', 105, 280, { align: 'center' });
-    
-    // Save the PDF
-    doc.save(`invoice_${invoice.receiptNumber}.pdf`);
+  // Function to show notification
+  const showNotification = (message, type = 'success') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 3000);
   };
 
-  const printInvoice = (invoice) => {
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Invoice ${invoice.receiptNumber}</title>
-          <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            .header { text-align: center; margin-bottom: 30px; }
-            .title { color: #283593; font-size: 24px; font-weight: bold; }
-            .subtitle { font-size: 18px; }
-            .details { margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-            th { background-color: #3b82f6; color: white; padding: 8px; text-align: left; }
-            td { padding: 8px; border-bottom: 1px solid #ddd; }
-            .total { text-align: right; font-weight: bold; font-size: 16px; margin-top: 20px; }
-            .footer { text-align: center; margin-top: 50px; color: #666; font-size: 12px; }
-            @media print {
-              body { margin: 0; padding: 20px; }
-              button { display: none; }
-            }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <div class="title">Qurbani Management System</div>
-            <div class="subtitle">INVOICE</div>
+  // Direct download function without opening modal
+  const directDownloadReceipt = async (receipt) => {
+    showNotification('Generating PDF...');
+    
+    // Create a temporary hidden modal for PDF generation with fixed width
+    const tempModal = document.createElement('div');
+    tempModal.style.position = 'absolute';
+    tempModal.style.left = '-9999px';
+    tempModal.style.top = '-9999px';
+    tempModal.style.width = '800px'; // Fixed width to match CSS
+    tempModal.innerHTML = `
+      <div class="receipt-preview" id="tempReceiptPreview">
+        <div class="receipt-header">
+          <h1 class="receipt-title">Qurbani Management System</h1>
+          <h2 class="receipt-subtitle">RECEIPT</h2>
+        </div>
+        
+        <div class="receipt-details">
+          <div>
+            <p><strong>Receipt #:</strong> ${receipt.id}</p>
+            <p><strong>Date:</strong> ${new Date(receipt.created_at).toLocaleDateString()}</p>
+            <p><strong>Zone:</strong> ${receipt.zone}</p>
+            <p><strong>Area:</strong> ${receipt.area}</p>
           </div>
-          
-          <div class="details">
-            <div><strong>Receipt #:</strong> ${invoice.receiptNumber}</div>
-            <div><strong>Date:</strong> ${invoice.date}</div>
-            <div><strong>Customer:</strong> ${invoice.customerName}</div>
+          <div>
+            <p><strong>Purpose:</strong> ${receipt.purpose}</p>
+            <p><strong>Paid By:</strong> ${receipt.paid_by}</p>
+            <p><strong>Received By:</strong> ${receipt.received_by}</p>
           </div>
-          
-          <table>
-            <thead>
-              <tr>
-                <th>Type</th>
-                <th>Name</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${invoice.items.map(item => `
-                <tr>
-                  <td>${item.type}</td>
-                  <td>${item.name}</td>
-                  <td>$${item.amount}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-          
-          <div class="total">Total: $${invoice.total}</div>
-          
-          <div class="footer">
-            Thank you for your payment!
+        </div>
+        
+        <div class="receipt-table-container">
+          <div class="receipt-table">
+            <div class="receipt-table-header">
+              <div class="receipt-header-cell">Description</div>
+              <div class="receipt-header-cell text-right">Quantity</div>
+              <div class="receipt-header-cell text-right">Rate</div>
+              <div class="receipt-header-cell text-right">Amount</div>
+            </div>
+            <div class="receipt-table-body">
+              <div class="receipt-table-row">
+                <div class="receipt-table-cell">Qurbani Share</div>
+                <div class="receipt-table-cell text-right">${receipt.quantity}</div>
+                <div class="receipt-table-cell text-right">₹${receipt.rate}</div>
+                <div class="receipt-table-cell text-right">₹${receipt.net_total}</div>
+              </div>
+            </div>
+            <div class="receipt-table-footer">
+              <div class="receipt-footer-cell" style="text-align: right; flex: 3">Total:</div>
+              <div class="receipt-footer-cell text-right">₹${receipt.net_total}</div>
+            </div>
           </div>
-          
-          <button onclick="window.print()" style="margin-top: 20px; padding: 10px 15px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">
-            Print Invoice
-          </button>
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
+        </div>
+        
+        <div class="receipt-footer">
+          <p>Thank you for your payment!</p>
+        </div>
+      </div>
+    `;
+    
+    document.body.appendChild(tempModal);
+    
+    try {
+      // Use HTML2Canvas to capture the receipt
+      const receiptElement = document.getElementById('tempReceiptPreview');
+      const canvas = await html2canvas(receiptElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      // Create PDF using jsPDF - use fixed dimensions
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      // Save the PDF
+      pdf.save(`receipt_${receipt.id}.pdf`);
+      
+      // Update notification
+      showNotification('PDF Downloaded Successfully!');
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      showNotification('Error generating PDF. Please try again.', 'error');
+    } finally {
+      // Clean up
+      document.body.removeChild(tempModal);
+    }
   };
 
-  if (!isLoading) {
-    return (
-      <Shimmer />
-    );
+  // Original download function for modal view
+  const downloadReceipt = async () => {
+    if (!selectedReceipt) return;
+    
+    const receiptElement = document.getElementById('receiptPreview');
+    
+    try {
+      // Hide buttons during capture
+      const modalActions = document.querySelector('.modal-actions');
+      const modalHeader = document.querySelector('.modal-header');
+      const originalModalStyle = modalActions.style.display;
+      const originalHeaderStyle = modalHeader.style.display;
+      
+      modalActions.style.display = 'none';
+      modalHeader.style.display = 'none';
+      
+      showNotification('Generating PDF...');
+      
+      // Use HTML2Canvas to capture the receipt
+      const canvas = await html2canvas(receiptElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+      
+      // Restore buttons
+      modalActions.style.display = originalModalStyle;
+      modalHeader.style.display = originalHeaderStyle;
+      
+      // Create PDF using jsPDF - use fixed dimensions
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+      
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = canvas.height * imgWidth / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
+      
+      // Save the PDF
+      pdf.save(`receipt_${selectedReceipt.id}.pdf`);
+      
+      // Update notification
+      showNotification('PDF Downloaded Successfully!');
+      
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      showNotification('Error generating PDF. Please try again.', 'error');
+    }
+  };
+
+  const viewReceipt = (receipt) => {
+    setSelectedReceipt(receipt);
+  };
+
+  if (isLoading) {
+    return <Shimmer />;
   }
 
   return (
-    <div className="fixed-color-theme flex flex-col p-4 max-w-full min-h-screen">
-      <div className="flex items-center justify-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">Invoice Management</h1>
-      </div>
-
-      {/* Search and Filter */}
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="relative w-full sm:w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+    <div className="container">
+      <div className="search-container">
+        <div className="search-input-container">
+          <Search className="search-icon" size={22} />
           <input
             type="text"
-            placeholder="Search invoices..."
-            className="search-input pl-10 pr-4 py-2 w-full"
+            placeholder="Search receipts..."
+            className="search-input"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
       </div>
 
-      {/* Invoice List */}
-      <div className="bg-white rounded-xl shadow-md overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt #</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {filteredInvoices.length > 0 ? (
-                filteredInvoices.map((invoice) => (
-                  <tr key={invoice.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {invoice.receiptNumber}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {invoice.date}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {invoice.customerName}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${invoice.total}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button
-                          onClick={() => generatePDF(invoice)}
-                          className="text-blue-600 hover:text-blue-900 flex items-center"
-                          title="Download PDF"
-                        >
-                          <Download size={16} className="mr-1" />
-                          <span className="hidden sm:inline">PDF</span>
-                        </button>
-                        <button
-                          onClick={() => printInvoice(invoice)}
-                          className="text-gray-600 hover:text-gray-900 flex items-center"
-                          title="Print Invoice"
-                        >
-                          <Printer size={16} className="mr-1" />
-                          <span className="hidden sm:inline">Print</span>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+      <div className="table-container">
+        <div className="table-wrapper">
+          <div className="table">
+            {/* Fixed Header */}
+            <div className="table-header">
+              <div className="header-cell" data-column="receipt">Receipt</div>
+              <div className="header-cell" data-column="date">Date</div>
+              <div className="header-cell" data-column="zone">Zone</div>
+              <div className="header-cell" data-column="area">Area</div>
+              <div className="header-cell" data-column="purpose">Purpose</div>
+              <div className="header-cell" data-column="quantity">Quantity</div>
+              <div className="header-cell" data-column="rate">Rate</div>
+              <div className="header-cell" data-column="total">Total</div>
+              <div className="header-cell" data-column="view">View</div>
+              <div className="header-cell" data-column="download">Download</div>
+            </div>
+            
+            {/* Scrollable Body */}
+            <div className="table-body">
+              {filteredReceipts.length > 0 ? (
+                filteredReceipts.map((receipt) => (
+                  <div className="table-row" key={receipt.id}>
+                    <div className="table-cell" data-column="receipt">{receipt.id}</div>
+                    <div className="table-cell" data-column="date">{new Date(receipt.created_at).toLocaleDateString()}</div>
+                    <div className="table-cell" data-column="zone">{receipt.zone}</div>
+                    <div className="table-cell" data-column="area">{receipt.area}</div>
+                    <div className="table-cell" data-column="purpose">{receipt.purpose}</div>
+                    <div className="table-cell" data-column="quantity">{receipt.quantity}</div>
+                    <div className="table-cell" data-column="rate">₹{receipt.rate}</div>
+                    <div className="table-cell" data-column="total">₹{receipt.net_total}</div>
+                    <div className="table-cell" data-column="view">
+                      <FileText 
+                        className="action-icon view-icon" 
+                        size={24} 
+                        onClick={() => viewReceipt(receipt)} 
+                        title="View Receipt"
+                      />
+                    </div>
+                    <div className="table-cell" data-column="download">
+                      <Download 
+                        className="action-icon download-icon" 
+                        size={24} 
+                        onClick={() => directDownloadReceipt(receipt)} 
+                        title="Download PDF"
+                      />
+                    </div>
+                  </div>
                 ))
               ) : (
-                <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
-                    No invoices found
-                  </td>
-                </tr>
+                <div className="table-row">
+                  <div className="table-cell" style={{flex: 1, textAlign: 'center', padding: '20px', fontSize: '18px'}}>
+                    {searchTerm ? 'No matching receipts found' : 'No receipts available'}
+                  </div>
+                </div>
               )}
-            </tbody>
-          </table>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Invoice Preview Modal */}
-      {selectedInvoice && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Invoice Preview</h2>
-                <button 
-                  onClick={() => setSelectedInvoice(null)}
-                  className="text-gray-500 hover:text-gray-700"
-                >
-                  <X size={24} />
-                </button>
+      {selectedReceipt && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h2 className="modal-title">Receipt Preview</h2>
+              <X 
+                className="modal-close" 
+                size={30} 
+                onClick={() => setSelectedReceipt(null)} 
+              />
+            </div>
+            
+            <div className="receipt-preview" id="receiptPreview">
+              <div className="receipt-header">
+                <h1 className="receipt-title">Qurbani Management System</h1>
+                <h2 className="receipt-subtitle">RECEIPT</h2>
               </div>
-              {/* Invoice preview content would go here */}
-              <div className="mt-4 flex justify-end space-x-3">
-                <button 
-                  className="button bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                  onClick={() => generatePDF(selectedInvoice)}
-                >
-                  Download PDF
-                </button>
-                <button 
-                  className="button bg-gray-200 text-gray-800 px-4 py-2 rounded hover:bg-gray-300"
-                  onClick={() => setSelectedInvoice(null)}
-                >
-                  Close
-                </button>
+              
+              <div className="receipt-details">
+                <div>
+                  <p><strong>Receipt #:</strong> {selectedReceipt.id}</p>
+                  <p><strong>Date:</strong> {new Date(selectedReceipt.created_at).toLocaleDateString()}</p>
+                  <p><strong>Zone:</strong> {selectedReceipt.zone}</p>
+                  <p><strong>Area:</strong> {selectedReceipt.area}</p>
+                </div>
+                <div>
+                  <p><strong>Purpose:</strong> {selectedReceipt.purpose}</p>
+                  <p><strong>Paid By:</strong> {selectedReceipt.paid_by}</p>
+                  <p><strong>Received By:</strong> {selectedReceipt.received_by}</p>
+                </div>
+              </div>
+              
+              <div className="receipt-table-container">
+                <div className="receipt-table">
+                  <div className="receipt-table-header">
+                    <div className="receipt-header-cell">Description</div>
+                    <div className="receipt-header-cell text-right">Quantity</div>
+                    <div className="receipt-header-cell text-right">Rate</div>
+                    <div className="receipt-header-cell text-right">Amount</div>
+                  </div>
+                  <div className="receipt-table-body">
+                    <div className="receipt-table-row">
+                      <div className="receipt-table-cell">Qurbani Share</div>
+                      <div className="receipt-table-cell text-right">{selectedReceipt.quantity}</div>
+                      <div className="receipt-table-cell text-right">₹{selectedReceipt.rate}</div>
+                      <div className="receipt-table-cell text-right">₹{selectedReceipt.net_total}</div>
+                    </div>
+                  </div>
+                  <div className="receipt-table-footer">
+                    <div className="receipt-footer-cell" style={{textAlign: 'right', flex: 3}}>Total:</div>
+                    <div className="receipt-footer-cell text-right">₹{selectedReceipt.net_total}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="receipt-footer">
+                <p>Thank you for your payment!</p>
               </div>
             </div>
+            
+            <div className="modal-actions">
+              <button 
+                className="action-button download-button"
+                onClick={downloadReceipt}
+              >
+                <Download size={20} />
+                Download Receipt
+              </button>
+              <button 
+                className="action-button close-button"
+                onClick={() => setSelectedReceipt(null)}
+              >
+                Close
+              </button>
+            </div>
           </div>
+        </div>
+      )}
+
+      {notification && (
+        <div className="notification" style={{backgroundColor: notification.type === 'error' ? '#e53e3e' : '#046307'}}>
+          {notification.type === 'success' ? <Check size={22} /> : null}
+          {notification.message}
         </div>
       )}
     </div>

@@ -28,7 +28,7 @@ function ContactPage() {
           storedUserData.isAuthenticated === false &&
           storedUserData.status === 0
         ) {
-          router.replace('/auth/user');
+          router.replace('/');
         }
       }
     } catch (error) {

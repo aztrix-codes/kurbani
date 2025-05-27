@@ -10,7 +10,7 @@ export default function GuidelinesPage() {
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userData'));
     if (userData?.userId === 0 && !userData?.isAuthenticated) {
-      router.replace('/auth/user');
+      router.replace('/');
     } 
   }, [router]);
 

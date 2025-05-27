@@ -21,7 +21,7 @@ export default function DashboardLayout({ children }) {
       name: 'User',
       img: null
     }));
-    router.replace('/auth/user');
+    router.replace('/');
   };
   
 
