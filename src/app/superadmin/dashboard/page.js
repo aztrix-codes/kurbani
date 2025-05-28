@@ -65,8 +65,8 @@ const Dashboard = () => {
       const lockStatus = response.data.data.lockall;
       
       setAdminData({
-        m_a_cost: fullMaCost / 7,
-        oom_a_cost: fullOomCost / 7,
+        m_a_cost: fullMaCost ,
+        oom_a_cost: fullOomCost ,
         lockall: lockStatus
       });
       
@@ -170,10 +170,10 @@ const Dashboard = () => {
   const handleCancel = (costType) => {
     if (costType === 'm_a_cost') {
       setIsEditingMumbai(false);
-      setMumbaiCostInput((adminData.m_a_cost * 7).toString());
+      setMumbaiCostInput((adminData.m_a_cost).toString());
     } else {
       setIsEditingOOM(false);
-      setOomCostInput((adminData.oom_a_cost * 7).toString());
+      setOomCostInput((adminData.oom_a_cost).toString());
     }
   };
 
@@ -233,11 +233,11 @@ const Dashboard = () => {
     });
 
     setDashboardData([
-      { title: 'Animals (Out of Mumbai)', count: oom.totalAnimals, amt: oom.totalAnimals * (adminData.oom_a_cost * 7) },
+      { title: 'Animals (Out of Mumbai)', count: oom.totalAnimals, amt:  ''},
       { title: 'Shares (Out of Mumbai)', count: oom.totalShares, amt: oom.totalAmount },
       { title: 'Paid (Out of Mumbai)', count: oom.paidCount, amt: oom.paidAmount },
       { title: 'Pending (Out of Mumbai)', count: oom.pendingCount, amt: oom.pendingAmount },
-      { title: 'Animals (Mumbai)', count: mum.totalAnimals, amt: mum.totalAnimals * (adminData.m_a_cost * 7) },
+      { title: 'Animals (Mumbai)', count: mum.totalAnimals, amt: '' },
       { title: 'Shares (Mumbai)', count: mum.totalShares, amt: mum.totalAmount },
       { title: 'Paid (Mumbai)', count: mum.paidCount, amt: mum.paidAmount },
       { title: 'Pending (Mumbai)', count: mum.pendingCount, amt: mum.pendingAmount }
