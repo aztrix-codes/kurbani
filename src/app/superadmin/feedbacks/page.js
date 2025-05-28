@@ -193,7 +193,7 @@ function FeedbackPage() {
             <div className="modal-body">
               <p>Are you sure you want to delete this feedback from <strong>{selectedFeedback.username}</strong>?</p>
               <div className="feedback-preview">
-                "{selectedFeedback.feedback}"
+                &quot;{selectedFeedback.feedback}&quot;
               </div>
               <p className="warning-text">This action cannot be undone.</p>
             </div>

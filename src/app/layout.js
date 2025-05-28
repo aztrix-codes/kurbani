@@ -33,6 +33,7 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#046307" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="#046307" />
+        <meta name="apple-mobile-web-app-title" content="MyWebSite" />
       </head>
       <body
         style={{ display: "flex", flex: 1 }}
