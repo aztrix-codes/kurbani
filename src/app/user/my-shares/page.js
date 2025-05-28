@@ -18,7 +18,7 @@ export default function DataTable() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [currentReceipt, setCurrentReceipt] = useState('');
   const [hissaCards, setHissaCards] = useState([{ id: 1, type: "", text: "", isDisabled: false, pairId: null }]);
-  const [location, setLocation] = useState("Out Of Mumbai");
+  const [location, setLocation] = useState("Out of Mumbai");
   const [receiptNumber, setReceiptNumber] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -217,7 +217,7 @@ export default function DataTable() {
     });
     
     setHissaCards(cards.length > 0 ? cards : [{ id: 1, type: "", text: "", isDisabled: false, pairId: null }]);
-    setLocation(recordsWithSameReceipt[0]?.zone || "Out Of Mumbai");
+    setLocation(recordsWithSameReceipt[0]?.zone || "Out of Mumbai");
     setReceiptNumber(receipt);
     setMobileNumber(recordsWithSameReceipt[0]?.phone || "");
     setIsEditModalOpen(true);

@@ -259,7 +259,7 @@ export default function AreasPage() {
             <div className="table-cell">Zone</div>
             <div className="table-cell">Mobile</div>
             <div className="table-cell">Email</div>
-            <div className="table-cell">Published</div>
+            <div className="table-cell">Publish</div>
             <div className="table-cell">Created Date</div>
             <div className="table-cell">Actions</div>
           </div>
@@ -271,7 +271,7 @@ export default function AreasPage() {
                 <div className="table-cell">{area.area}</div>
                 <div className="table-cell">{area.zone}</div>
                 <div className="table-cell">{area.mobile}</div>
-                <div className="table-cell">{area.email || '-'}</div>
+                <div className="table-cell">{area.email.replace(/^(.).+(.{2}@.*)$/, '$1∗∗$2') || '-'}</div>
                 <div className="table-cell">
                   <Switch
                     checked={area.published}

@@ -75,11 +75,11 @@ const OutOfMumbaiSummaryTable = () => {
   // Calculate summary data for each user
   const calculateSummaryData = () => {
     const summary = users.map((user, index) => {
-      // Filter customers for this user where status is 1 and zone is Out Of Mumbai
+      // Filter customers for this user where status is 1 and zone is Out of Mumbai
       const userCustomers = customerData.filter(customer => 
         customer.user_id == user.user_id && 
         customer.status === 1 && 
-        customer.zone === 'Out Of Mumbai'
+        customer.zone === 'Out of Mumbai'
       );
       
       // Calculate total hissa (count of filtered records)
@@ -117,7 +117,7 @@ const OutOfMumbaiSummaryTable = () => {
       };
     });
     
-    // Filter out users with no Out Of Mumbai customers
+    // Filter out users with no Out of Mumbai customers
     const filteredSummary = summary.filter(item => item.total_hissa > 0);
     
     setSummaryData(filteredSummary);
@@ -226,7 +226,7 @@ const OutOfMumbaiSummaryTable = () => {
         <div style={styles.header}>
           <div style={styles.headerContent}>
             <div style={styles.headerTitle}>
-              <h1 style={styles.h1}>Summary Report - Out Of Mumbai</h1>
+              <h1 style={styles.h1}>Summary Report - Out of Mumbai</h1>
             </div>
             
             <div style={styles.headerActions}>

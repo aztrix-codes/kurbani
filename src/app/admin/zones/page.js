@@ -234,7 +234,7 @@ export default function ZonesPage() {
             <div className='table-cell'>Zone</div>
             <div className='table-cell'>Mobile</div>
             <div className='table-cell'>Email</div>
-            <div className='table-cell'>Published</div>
+            <div className='table-cell'>Publish</div>
             <div className='table-cell'>Created Date</div>
             <div className='table-cell'>Actions</div>
           </div>
@@ -245,7 +245,7 @@ export default function ZonesPage() {
                 <div className='table-cell'>{zone.nigra}</div>
                 <div className='table-cell'>{zone.zone}</div>
                 <div className='table-cell'>{zone.mobile}</div>
-                <div className='table-cell'>{zone.email || '-'}</div>
+                <div className='table-cell'>{zone.email.replace(/^(.).+(.{2}@.*)$/, '$1∗∗$2') || '-'}</div>
                 <div className='table-cell'>
                   <Switch
                     checked={zone.published}

@@ -201,7 +201,7 @@ const DataTable = () => {
   const getZoneNameFromArea = (areaName) => {
     if (!areaName) return 'N/A';
     const matchedArea = areasList.find(area => area.area_name === areaName);
-    return matchedArea ? matchedArea.zone_name : 'Out Of Mumbai';
+    return matchedArea ? matchedArea.zone_name : 'Out of Mumbai';
   };
 
   // Handle opening eye modal
@@ -432,7 +432,7 @@ const DataTable = () => {
         <div style={styles.header}>
           <div style={styles.headerContent}>
             <div style={styles.headerTitle}>
-              <h1 style={styles.h1}>Generate Receipt - Out Of Mumbai</h1>
+              <h1 style={styles.h1}>Generate Receipt - Out of Mumbai</h1>
             </div>
             
             <div style={styles.headerActions}>
@@ -486,9 +486,9 @@ const DataTable = () => {
          <div style={styles.tableBody}>
           {filteredData.length > 0 ? (
             filteredData.map((item, index) => {
-              // Filter customerData based on matching user_id - CHANGED to "Out Of Mumbai"
+              // Filter customerData based on matching user_id - CHANGED to "Out of Mumbai"
               const userCustomerData = customerData.filter(customer => 
-                customer.user_id == item.user_id && customer.zone === "Out Of Mumbai" && customer.status === 1
+                customer.user_id == item.user_id && customer.zone === "Out of Mumbai" && customer.status === 1
               );
               // Calculate total hissa (count of filtered records)
               const totalHissa = userCustomerData.length;

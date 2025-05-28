@@ -52,7 +52,7 @@ function Page() {
   const mumbaiTotal = mumbaiData.length
   const mumbaiPaid = mumbaiData.filter(i => i.payment_status === 1).length
   const mumbaiPending = mumbaiData.filter(i => i.payment_status === 0).length
-  const outOfMumbaiData = data.filter(i => i.zone === 'Out Of Mumbai' && i.status === 1)
+  const outOfMumbaiData = data.filter(i => i.zone === 'Out of Mumbai' && i.status === 1)
   const outOfMumbaiTotal = outOfMumbaiData.length
   const OutOfmumbaiPaid = outOfMumbaiData.filter(i => i.payment_status === 1).length
   const OutOfmumbaiPending = outOfMumbaiData.filter(i => i.payment_status === 0).length

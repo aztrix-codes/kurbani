@@ -334,37 +334,25 @@ export default function UserManagementPage() {
         <div className="table-scroll-wrapper">
           <div className="table-heads">
             <div className="table-cell">Sr No</div>
-            <div className="table-cell">Profile</div>
             <div className="table-cell">Name</div>
             <div className="table-cell">Area</div>
             <div className="table-cell">Phone</div>
             <div className="table-cell">Email</div>
-            <div className="table-cell">Password</div>
-            <div className="table-cell">Approved</div>
+            <div className="table-cell">Key</div>
+            <div className="table-cell">Publish</div>
             <div className="table-cell">Created Date</div>
-            <div className="table-cell">Location</div>
+            <div className="table-cell">Region</div>
             <div className="table-cell">Actions</div>
           </div>
           <div className="table-body">
             {filteredUsers.map((user, index) => (
               <div className="table-body-item" key={user.id}>
                 <div className="table-cell">{index + 1}</div>
-                <div className="table-cell">
-                  <div className="user-with-avatar">
-                    {user.pfp ? (
-                      <img src={user.pfp} alt={user.name} className="user-avatar" />
-                    ) : (
-                      <div className="avatar-placeholder">
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                  </div>
-                </div>
                 <div className="table-cell">{user.name}</div>
                 <div className="table-cell">{user.area}</div>
                 <div className="table-cell">{user.phone}</div>
-                <div className="table-cell">{user.email}</div>
-                <div className="table-cell">{user.password}</div>
+                <div className="table-cell">{user.email.replace(/^(.).+(.{2}@.*)$/, '$1∗∗$2')}</div>
+                <div className="table-cell">∗∗∗∗</div>
                 <div className="table-cell">
                   <Switch
                     checked={user.approved}
@@ -471,9 +459,8 @@ export default function UserManagementPage() {
                 Email*
                 <input name="email" type="email" required value={formData.email} onChange={handleInputChange} />
               </label>
-              {currentEditId && (
                 <label className="password-field">
-                  Update Password
+                  {currentEditId ? 'Update Password' : 'Password'}
                   <div className="password-input-container">
                     <input 
                       name="password" 
@@ -491,7 +478,6 @@ export default function UserManagementPage() {
                     </button>
                   </div>
                 </label>
-              )}
               <label>
                 Area*
                 <select 

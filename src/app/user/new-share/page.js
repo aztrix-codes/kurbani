@@ -13,7 +13,7 @@ const hissaOptions = [
 
 export default function QurbaniApp() {
   const [hissaCards, setHissaCards] = useState([{ id: 1, type: "Qurbani", text: "", isDisabled: false, pairId: null }]);
-  const [location, setLocation] = useState("Out Of Mumbai");
+  const [location, setLocation] = useState("Out of Mumbai");
   const [receiptNumber, setReceiptNumber] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);

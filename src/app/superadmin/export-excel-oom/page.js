@@ -31,7 +31,7 @@ const DataTable = () => {
       
       // Filter for Mumbai customers with status 0
       const filteredData = response.data.filter(customer => 
-        customer.zone === 'Out Of Mumbai' && customer.status === 0
+        customer.zone === 'Out of Mumbai' && customer.status === 0
       );
       
       setCustomerData(filteredData);
