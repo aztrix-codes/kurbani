@@ -10,7 +10,7 @@ export default function AdminLayout({ children }) {
 
 
   const links = [
-    {title: "Home", path: 'dashboard'},
+    {title: "Dashboard", path: 'dashboard'},
     {title: "Generate Receipt - Mumbai", path: 'receipt-mumbai'},
     {title: "Generate Receipt - Out of Mumbai", path: 'receipt-oom'},
      {title: "Export Excel - Mumbai", path: 'export-excel-mumbai'},
