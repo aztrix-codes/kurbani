@@ -229,7 +229,7 @@ function AdminLoginPage() {
 
   // Media query function for responsive design
   const applyMediaQuery = () => {
-    if (window.innerWidth <= 768) {
+    if (typeof window !== 'undefined' && window.innerWidth <= 780) {
       return {
         mainContainer: {
           flexDirection: 'column',
