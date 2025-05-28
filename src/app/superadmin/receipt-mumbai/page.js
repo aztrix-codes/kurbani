@@ -29,7 +29,7 @@ const DataTable = () => {
   const [selectedRowData, setSelectedRowData] = useState(null);
   
   // Receipt form states
-  const [amountPerShare, setAmountPerShare] = useState(Math.ceil(4300 / 7));
+  const [amountPerShare, setAmountPerShare] = useState(Math.ceil(4300));
   const [howMuchPaying, setHowMuchPaying] = useState(0);
   const [paidBy, setPaidBy] = useState('');
   const [collectedBy, setCollectedBy] = useState('');
@@ -41,8 +41,8 @@ const DataTable = () => {
   
   // Admin data state for cost per share
   const [adminData, setAdminData] = useState({
-    m_a_cost: Math.ceil(4300 / 7),
-    oom_a_cost: Math.ceil(4000 / 7)
+    m_a_cost: Math.ceil(4300),
+    oom_a_cost: Math.ceil(4000)
   });
   
   // Transaction logs storage - key is the row ID, value is the array of transactions
@@ -61,11 +61,11 @@ const DataTable = () => {
       });
       if (response.data.success) {
         setAdminData({
-          m_a_cost: Math.ceil(parseFloat(response.data.data.m_a_cost) / 7),
-          oom_a_cost: Math.ceil(parseFloat(response.data.data.oom_a_cost) / 7)
+          m_a_cost: Math.ceil(parseFloat(response.data.data.m_a_cost)),
+          oom_a_cost: Math.ceil(parseFloat(response.data.data.oom_a_cost))
         });
         // Update amount per share with the m_a_cost from admin data
-        setAmountPerShare(Math.ceil(parseFloat(response.data.data.m_a_cost / 7)));
+        setAmountPerShare(Math.ceil(parseFloat(response.data.data.m_a_cost)));
       }
     } catch (error) {
       console.error('Error fetching admin data:', error);
