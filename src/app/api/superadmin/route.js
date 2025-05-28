@@ -1,4 +1,4 @@
-import pool from '../db'; // Adjust the path to your db.js file
+import pool from '../db'; 
 
 // GET - Retrieve m_a_cost and oom_a_cost with name/password authentication
 export async function GET(request) {

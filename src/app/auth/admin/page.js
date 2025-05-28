@@ -11,11 +11,38 @@ function AdminLoginPage() {
   const [error, setError] = useState('');
   const router = useRouter();
 
-  useEffect(() => {
-    const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-    if (isLoggedIn) {
-      router.replace('/admin/zones');
+  // Check if server is locked
+  const checkLockStatus = async () => {
+    try {
+      const response = await fetch('/api/superadmin/lock');
+      const data = await response.json();
+      
+      if (response.ok && data && data.length > 0) {
+        return data[0].lockall === 1;
+      }
+      return false;
+    } catch (err) {
+      console.error('Lock status check error:', err);
+      return false;
     }
+  };
+
+  useEffect(() => {
+    const checkAutoLogin = async () => {
+      const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+      if (isLoggedIn) {
+        // Check if server is locked before auto-redirecting
+        const isLocked = await checkLockStatus();
+        if (isLocked) {
+          setError('The server has been frozen by admin. Please try again later.');
+          localStorage.setItem('adminLoggedIn', 'false');
+          return;
+        }
+        router.replace('/admin/zones');
+      }
+    };
+
+    checkAutoLogin();
   }, [router]);
 
   const handleSubmit = async (e) => {
@@ -24,6 +51,14 @@ function AdminLoginPage() {
     setIsLoading(true);
 
     try {
+      // Check if server is locked before attempting login
+      const isLocked = await checkLockStatus();
+      if (isLocked) {
+        setError('The server has been frozen by admin. Please try again later.');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await axios.get('/api/admin', {
         params: { username, password }
       });

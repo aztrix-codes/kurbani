@@ -20,6 +20,22 @@ function UserLoginPage() {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Check if server is locked
+  const checkLockStatus = async () => {
+    try {
+      const response = await fetch('/api/superadmin/lock');
+      const data = await response.json();
+      
+      if (response.ok && data && data.length > 0) {
+        return data[0].lockall === 1;
+      }
+      return false;
+    } catch (err) {
+      console.error('Lock status check error:', err);
+      return false;
+    }
+  };
+
   // Auto login on mount if credentials exist
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userData'));
@@ -34,7 +50,20 @@ function UserLoginPage() {
   const autoLogin = async (storedIdentifier, storedPassword) => {
     setIsLoading(true);
     setError('');
+    
     try {
+      // Check if server is locked before attempting auto login
+      const isLocked = await checkLockStatus();
+      if (isLocked) {
+        setError('The server has been frozen by admin. Please try again later.');
+        // Clear stored credentials if server is locked
+        localStorage.removeItem('identifier');
+        localStorage.removeItem('password');
+        localStorage.removeItem('userData');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await fetch(
         `/api/users/user?phoneOrEmail=${encodeURIComponent(storedIdentifier)}&password=${encodeURIComponent(storedPassword)}`
       );
@@ -78,6 +107,14 @@ function UserLoginPage() {
     setIsLoading(true);
 
     try {
+      // Check if server is locked before attempting login
+      const isLocked = await checkLockStatus();
+      if (isLocked) {
+        setError('The server has been frozen by admin. Please try again later.');
+        setIsLoading(false);
+        return;
+      }
+
       const response = await fetch(
         `/api/users/user?phoneOrEmail=${encodeURIComponent(identifier)}&password=${encodeURIComponent(password)}`
       );
@@ -274,7 +311,7 @@ function UserLoginPage() {
                 Email / Phone
               </label>
               <input
-                style={styles.formInput }               
+                style={styles.formInput}               
                 type="text"
                 id="identifier"
                 placeholder="Enter your email or phone"
