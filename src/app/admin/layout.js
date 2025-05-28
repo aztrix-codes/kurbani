@@ -14,6 +14,7 @@ export default function AdminLayout({ children }) {
     {title: "Manage Zones", path: 'zones'},
     {title: "Manage Areas", path: 'areas'},
     {title: "Manage Users", path: 'users'},
+    {title: "Feedbacks", path: 'feedback'},
   ]
 
   const toggleMobileNav = () => {

@@ -17,6 +17,7 @@ export default function AdminLayout({ children }) {
     {title: "Export Excel - Out of Mumbai", path: 'export-excel-oom'},
     {title: "Payment Status - Mumbai", path: 'payment-status-mumbai'},
     {title: "Payment Status - Out of Mumbai", path: 'payment-status-oom'},
+    {title: "Feedbacks", path: 'feedbacks'},
   ]
 
   const handleLogout = () => {
@@ -28,32 +29,37 @@ export default function AdminLayout({ children }) {
 
 
   return (
-    <div className="admin-container" suppressHydrationWarning>
-      <nav className="wide-nav">
-        <div className="nav-header">
-          <h1>Admin Panel</h1>
-        </div>
-        
-        <div className='nav-items'>
-          {links.map((link, index) => (
-            <Link 
-              key={index} 
-              href={`/superadmin/${link.path}`} 
-              className={`nav-item ${pathname?.includes(link.path) ? 'active' : ''}`}
-            >
-              {link.title}
-            </Link>
-          ))}
-        </div>
-        
-        <div className="nav-footer">
-          <button className="logout-button" onClick={handleLogout} >
-            <img src='https://img.icons8.com/?size=100&id=59995&format=png&color=ffffff' alt="Logout" />
-          </button>
-        </div>
-      </nav>
-
-      <main className="admin-main-content">{children}</main>
+    <>
+    <div className='devMsgContainer'>
+      <h1>Desktop experience only. Not optimized for mobile viewing.</h1>
     </div>
+      <div className="admin-container" suppressHydrationWarning>
+        <nav className="wide-nav">
+          <div className="nav-header">
+            <h1>Admin Panel</h1>
+          </div>
+          
+          <div className='nav-items'>
+            {links.map((link, index) => (
+              <Link 
+                key={index} 
+                href={`/superadmin/${link.path}`} 
+                className={`nav-item ${pathname?.includes(link.path) ? 'active' : ''}`}
+              >
+                {link.title}
+              </Link>
+            ))}
+          </div>
+          
+          <div className="nav-footer">
+            <button className="logout-button" onClick={handleLogout} >
+              <img src='https://img.icons8.com/?size=100&id=59995&format=png&color=ffffff' alt="Logout" />
+            </button>
+          </div>
+        </nav>
+
+        <main className="admin-main-content">{children}</main>
+      </div>
+    </>
   )
 }

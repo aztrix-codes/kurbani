@@ -16,17 +16,12 @@ function UserLoginPage() {
   const setupDatabase = async () => {
     try {
       const response = await axios.get('/api/setupdb');
-      // console.log('Setup response:', response.data);
       
       if (response.data.success) {
         console.log('Setup successful!');
-        // console.log('Tables created:', response.data.tables);
-        // console.log('Default users:', response.data.defaultUsers);
       } else {
-        // console.error('Setup failed:', response.data.message);
       }
     } catch (error) {
-      // console.error('Setup error:', error.response?.data || error.message);
     }
   };
 

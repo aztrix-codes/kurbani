@@ -1,3 +1,6 @@
+create database kurbani;
+
+USE kurbani;
 
 CREATE TABLE admin (
     admin_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -100,3 +103,14 @@ CREATE TABLE superadmin (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+
+
+
+
+
+
+
+
+
+ #046307
+  #f8fafc

@@ -93,3 +93,28 @@
     background: #f9fafb;
 }
 
+.devMsgContainer {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    .admin-container{
+        display: none;
+    }
+
+    .devMsgContainer {
+        display: flex;
+        flex: 1;
+        height: 100vh;
+        justify-content: center;
+        align-items: center;
+        padding: 5vw;
+        text-align: center;
+        background: #046307;
+    }
+
+    .devMsgContainer h1 {
+        font-size: 5vw;
+        color: #f9fafb;
+    }
+}
