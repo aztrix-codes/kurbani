@@ -9,6 +9,8 @@ function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
 
   // Check if server is locked
@@ -28,22 +30,48 @@ function AdminLoginPage() {
   };
 
   useEffect(() => {
+    setIsMounted(true);
+    
+    // Check mobile view
+    if (typeof window !== 'undefined') {
+      const checkIsMobile = () => {
+        setIsMobile(window.innerWidth <= 780);
+      };
+      
+      checkIsMobile();
+      
+      const handleResize = () => {
+        checkIsMobile();
+      };
+
+      window.addEventListener('resize', handleResize);
+      
+      // Cleanup function
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
+
+  useEffect(() => {
     const checkAutoLogin = async () => {
-      const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
-      if (isLoggedIn) {
-        // Check if server is locked before auto-redirecting
-        const isLocked = await checkLockStatus();
-        if (isLocked) {
-          setError('The server has been frozen by admin. Please try again later.');
-          localStorage.setItem('adminLoggedIn', 'false');
-          return;
+      if (typeof window !== 'undefined') {
+        const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+        if (isLoggedIn) {
+          // Check if server is locked before auto-redirecting
+          const isLocked = await checkLockStatus();
+          if (isLocked) {
+            setError('The server has been frozen by admin. Please try again later.');
+            localStorage.setItem('adminLoggedIn', 'false');
+            return;
+          }
+          router.replace('/admin/zones');
         }
-        router.replace('/admin/zones');
       }
     };
 
-    checkAutoLogin();
-  }, [router]);
+    if (isMounted) {
+      checkAutoLogin();
+    }
+  }, [router, isMounted]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -64,12 +92,16 @@ function AdminLoginPage() {
       });
 
       if (response.status === 200) {
-        localStorage.setItem('adminLoggedIn', 'true');
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('adminLoggedIn', 'true');
+        }
         router.push('/admin/zones');
       }
     } catch (err) {
       console.error('Login error:', err);
-      localStorage.setItem('adminLoggedIn', 'false');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('adminLoggedIn', 'false');
+      }
       
       if (err.response) {
         if (err.response.status === 401) {
@@ -89,179 +121,183 @@ function AdminLoginPage() {
     }
   };
 
-  const styles = {
-    mainContainer: {
-      display: 'flex',
-      width: '100vw',
-      height: '100vh',
-      margin: 0,
-      padding: 0,
-      overflow: 'hidden',
-      flexDirection: 'row-reverse'
-    },
-    leftPanel: {
-      width: '50%',
-      height: '100%',
-      backgroundColor: '#046307',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      position: 'relative'
-    },
-    rightPanel: {
-      width: '50%',
-      height: '100%',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: '#f8fafc'
-    },
-    leftPanelContent: {
-      color: 'white',
-      textAlign: 'center',
-      maxWidth: '80%',
-      zIndex: 1
-    },
-    brandTitle: {
-      fontSize: '42px',
-      fontWeight: 'bold',
-      marginBottom: '20px'
-    },
-    brandSubtitle: {
-      fontSize: '20px',
-      opacity: 0.9,
-      lineHeight: 1.6
-    },
-    formContainer: {
-      width: '70%',
-      maxWidth: '450px',
-      padding: '40px',
-      borderRadius: '1rem',
-      backgroundColor: 'white',
-      boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)'
-    },
-    formTitle: {
-      fontSize: '28px',
-      color: '#333',
-      marginBottom: '30px',
-      textAlign: 'center',
-      fontWeight: 'bold'
-    },
-    formGroup: {
-      marginBottom: '20px'
-    },
-    formLabel: {
-      display: 'block',
-      marginBottom: '8px',
-      fontSize: '14px',
-      fontWeight: '500',
-      color: '#333'
-    },
-    formInput: {
-      width: '100%',
-      padding: '12px 15px',
-      fontSize: '16px',
-      borderRadius: '1rem',
-      border: '1px solid #ddd',
-      outline: 'none',
-      transition: 'border-color 0.2s',
-      boxSizing: 'border-box'
-    },
-    submitButton: {
-      width: '100%',
-      padding: '14px',
-      backgroundColor: '#046307',
-      color: 'white',
-      border: 'none',
-      borderRadius: '1rem',
-      fontSize: '16px',
-      fontWeight: '500',
-      cursor: 'pointer',
-      transition: 'background-color 0.2s',
-      marginTop: '10px',
-    },
-    submitButtonHover: {
-      backgroundColor: '#034d05'
-    },
-    errorText: {
-      color: '#e74c3c',
-      fontSize: '14px',
-      marginTop: '10px',
-      textAlign: 'center'
-    },
-    backgroundCircle1: {
-      position: 'absolute',
-      width: '300px',
-      height: '300px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      top: '10%',
-      left: '10%'
-    },
-    backgroundCircle2: {
-      position: 'absolute',
-      width: '400px',
-      height: '400px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      bottom: '10%',
-      right: '5%'
-    },
-    backgroundCircle3: {
-      position: 'absolute',
-      width: '300px',
-      height: '300px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      top: '5%',
-      left: '20%'
-    },
-    backgroundCircle4: {
-      position: 'absolute',
-      width: '300px',
-      height: '300px',
-      borderRadius: '50%',
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      bottom: '-15%',
-      left: '-15%'
-    },
-  };
+  const getStyles = () => {
+    const baseStyles = {
+      mainContainer: {
+        display: 'flex',
+        width: '100vw',
+        height: '100vh',
+        margin: 0,
+        padding: 0,
+        overflow: 'hidden',
+        flexDirection: 'row-reverse'
+      },
+      leftPanel: {
+        width: '50%',
+        height: '100%',
+        backgroundColor: '#046307',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative'
+      },
+      rightPanel: {
+        width: '50%',
+        height: '100%',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc'
+      },
+      leftPanelContent: {
+        color: 'white',
+        textAlign: 'center',
+        maxWidth: '80%',
+        zIndex: 1
+      },
+      brandTitle: {
+        fontSize: '42px',
+        fontWeight: 'bold',
+        marginBottom: '20px'
+      },
+      brandSubtitle: {
+        fontSize: '20px',
+        opacity: 0.9,
+        lineHeight: 1.6
+      },
+      formContainer: {
+        width: '70%',
+        maxWidth: '450px',
+        padding: '40px',
+        borderRadius: '1rem',
+        backgroundColor: 'white',
+        boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)'
+      },
+      formTitle: {
+        fontSize: '28px',
+        color: '#333',
+        marginBottom: '30px',
+        textAlign: 'center',
+        fontWeight: 'bold'
+      },
+      formGroup: {
+        marginBottom: '20px'
+      },
+      formLabel: {
+        display: 'block',
+        marginBottom: '8px',
+        fontSize: '14px',
+        fontWeight: '500',
+        color: '#333'
+      },
+      formInput: {
+        width: '100%',
+        padding: '12px 15px',
+        fontSize: '16px',
+        borderRadius: '1rem',
+        border: '1px solid #ddd',
+        outline: 'none',
+        transition: 'border-color 0.2s',
+        boxSizing: 'border-box'
+      },
+      submitButton: {
+        width: '100%',
+        padding: '14px',
+        backgroundColor: '#046307',
+        color: 'white',
+        border: 'none',
+        borderRadius: '1rem',
+        fontSize: '16px',
+        fontWeight: '500',
+        cursor: 'pointer',
+        transition: 'background-color 0.2s',
+        marginTop: '10px',
+      },
+      submitButtonHover: {
+        backgroundColor: '#034d05'
+      },
+      errorText: {
+        color: '#e74c3c',
+        fontSize: '14px',
+        marginTop: '10px',
+        textAlign: 'center'
+      },
+      backgroundCircle1: {
+        position: 'absolute',
+        width: '300px',
+        height: '300px',
+        borderRadius: '50%',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        top: '10%',
+        left: '10%'
+      },
+      backgroundCircle2: {
+        position: 'absolute',
+        width: '400px',
+        height: '400px',
+        borderRadius: '50%',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        bottom: '10%',
+        right: '5%'
+      },
+      backgroundCircle3: {
+        position: 'absolute',
+        width: '300px',
+        height: '300px',
+        borderRadius: '50%',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        top: '5%',
+        left: '20%'
+      },
+      backgroundCircle4: {
+        position: 'absolute',
+        width: '300px',
+        height: '300px',
+        borderRadius: '50%',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        bottom: '-15%',
+        left: '-15%'
+      },
+    };
 
-  // Media query function for responsive design
-  const applyMediaQuery = () => {
-    if (typeof window !== 'undefined' && window.innerWidth <= 780) {
+    // Apply mobile styles if on mobile
+    if (isMobile) {
       return {
+        ...baseStyles,
         mainContainer: {
+          ...baseStyles.mainContainer,
           flexDirection: 'column',
-          backgroundColor: '#046307' // Set green background for mobile
+          backgroundColor: '#046307'
         },
         leftPanel: {
+          ...baseStyles.leftPanel,
           display: 'none'
         },
         rightPanel: {
+          ...baseStyles.rightPanel,
           width: '100%',
           height: '100%',
-          backgroundColor: 'transparent' // Make transparent to show green background
+          backgroundColor: 'transparent'
         },
         formContainer: {
+          ...baseStyles.formContainer,
           width: '85%',
           padding: '30px'
         }
-
       };
     }
-    return {};
+
+    return baseStyles;
   };
 
-  // Apply responsive styles
-  const responsiveStyles = applyMediaQuery();
-  Object.keys(responsiveStyles).forEach(key => {
-    if (styles[key]) {
-      styles[key] = { ...styles[key], ...responsiveStyles[key] };
-    }
-  });
-
   const [buttonHovered, setButtonHovered] = useState(false);
+
+  // Don't render until mounted to avoid hydration issues
+  if (!isMounted) {
+    return null;
+  }
+
+  const styles = getStyles();
 
   return (
     <div style={styles.mainContainer}>

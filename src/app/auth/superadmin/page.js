@@ -9,12 +9,18 @@ function SuperAdminLoginPage() {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [isMounted, setIsMounted] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const isLoggedIn = localStorage.getItem('superAdminLoggedIn') === 'true';
-    if (isLoggedIn) {
-      router.replace('/superadmin/dashboard'); // Adjust the redirect path as needed
+    setIsMounted(true);
+    
+    // Only access localStorage after component is mounted (client-side)
+    if (typeof window !== 'undefined') {
+      const isLoggedIn = localStorage.getItem('superAdminLoggedIn') === 'true';
+      if (isLoggedIn) {
+        router.replace('/superadmin/dashboard');
+      }
     }
   }, [router]);
 
@@ -29,14 +35,18 @@ function SuperAdminLoginPage() {
       });
 
       if (response.status === 200 && response.data.success) {
-        localStorage.setItem('superAdminLoggedIn', 'true');
-        localStorage.setItem('superAdminUsername', username);
-        localStorage.setItem('superAdminPassword', password);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('superAdminLoggedIn', 'true');
+          localStorage.setItem('superAdminUsername', username);
+          localStorage.setItem('superAdminPassword', password);
+        }
         router.push('/superadmin/dashboard');
       }
     } catch (err) {
       console.error('Login error:', err);
-      localStorage.setItem('superAdminLoggedIn', 'false');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('superAdminLoggedIn', 'false');
+      }
       
       if (err.response) {
         if (err.response.status === 401) {
@@ -55,6 +65,26 @@ function SuperAdminLoginPage() {
       setIsLoading(false);
     }
   };
+
+  const [buttonHovered, setButtonHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const checkIsMobile = () => {
+        setIsMobile(window.innerWidth <= 768);
+      };
+      
+      checkIsMobile();
+      
+      const handleResize = () => {
+        checkIsMobile();
+      };
+
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
+  }, []);
 
   const styles = {
     mainContainer: {
@@ -192,19 +222,36 @@ function SuperAdminLoginPage() {
       bottom: '-15%',
       left: '-15%'
     },
+    devMsgContainer: {
+      display: 'flex',
+      flex: 1,
+      height: '100vh',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: '5vw',
+      textAlign: 'center',
+      background: '#046307'
+    },
+    devMsgTitle: {
+      fontSize: '5vw',
+      color: '#f9fafb',
+      margin: 0
+    }
   };
 
+  // Don't render until mounted to avoid hydration issues
+  if (!isMounted) {
+    return null;
+  }
 
-
-  // Apply responsive styles
-  const responsiveStyles = applyMediaQuery();
-  Object.keys(responsiveStyles).forEach(key => {
-    if (styles[key]) {
-      styles[key] = { ...styles[key], ...responsiveStyles[key] };
-    }
-  });
-
-  const [buttonHovered, setButtonHovered] = useState(false);
+  // Show mobile message if on mobile
+  if (isMobile) {
+    return (
+      <div style={styles.devMsgContainer}>
+        <h1 style={styles.devMsgTitle}>Desktop experience only. Not optimized for mobile viewing.</h1>
+      </div>
+    );
+  }
 
   return (
     <div style={styles.mainContainer}>
