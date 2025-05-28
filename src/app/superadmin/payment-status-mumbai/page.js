@@ -87,16 +87,12 @@ const SummaryTable = () => {
       
       // Calculate total amount based on m_a_cost
       // Formula: (totalHissa / 7) * m_a_cost
-      const totalAnimals = Math.floor(totalHissa / 7);
-      const remainingShares = totalHissa % 7;
-      const totalAmount = (totalAnimals * adminData.m_a_cost) + (remainingShares * (adminData.m_a_cost / 7));
+      const totalAmount = (totalHissa * adminData.m_a_cost);
       
       // Calculate paid amount based on payment_status
       const paidCustomers = userCustomers.filter(customer => customer.payment_status === 1);
       const paidHissa = paidCustomers.length;
-      const paidAnimals = Math.floor(paidHissa / 7);
-      const paidRemainingShares = paidHissa % 7;
-      const paidAmount = (paidAnimals * adminData.m_a_cost) + (paidRemainingShares * (adminData.m_a_cost / 7));
+      const paidAmount = (paidHissa * adminData.m_a_cost);
       
       // Find the zone_name from areasList based on matching area_name
       const matchedArea = areasList.find(area => area.area_name === user.area_name);
