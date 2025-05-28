@@ -290,7 +290,7 @@ const Dashboard = () => {
 
       <div className='cost-info-input'>
         <span>
-          Mumbai animal cost: 
+          Rupees/share (Mumbai) : 
           <input 
             type="text" 
             value={mumbaiCostInput}
@@ -329,7 +329,7 @@ const Dashboard = () => {
         </span>
         
         <span>
-          Out of Mumbai animal cost: 
+          Rupees/Share (Out of Mumbai) : 
           <input 
             type="text" 
             value={oomCostInput}
@@ -369,8 +369,8 @@ const Dashboard = () => {
       </div>
 
       <div className="cost-info">
-        <span>Rupees/Share (Mumbai): ₹{adminData.m_a_cost.toLocaleString()}</span>
-        <span>Rupees/Share (Out of Mumbai): ₹{adminData.oom_a_cost.toLocaleString()}</span>
+        {/* <span>Rupees/Share (Mumbai): ₹{adminData.m_a_cost.toLocaleString()}</span>
+        <span>Rupees/Share (Out of Mumbai): ₹{adminData.oom_a_cost.toLocaleString()}</span> */}
         <span>Total: {formatCurrency(combinedTotals.total)}</span>
         <span>Paid: {formatCurrency(combinedTotals.paid)}</span>
         <span>Pending: {formatCurrency(combinedTotals.pending)}</span>
