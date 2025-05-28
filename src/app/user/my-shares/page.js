@@ -36,15 +36,17 @@ export default function DataTable() {
 
   useEffect(() => {
     const userData = JSON.parse(localStorage.getItem('userData'));
-    if (
-      userData.userId === 0 &&
-      userData.isAuthenticated === false &&
-      userData.status === 0
-    ) {
-      router.replace('/');
-    } else {
+      if (userData.m && userData.oom) {
+        setZones(['Out of Mumbai', 'Mumbai']);
+        setLocation('Out of Mumbai'); 
+      } else if (userData.m) {
+        setZones(['Mumbai']);
+        setLocation('Mumbai');
+      } else {
+        setZones(['Out of Mumbai']);
+        setLocation('Out of Mumbai');
+      }
       fetchData();
-    }
   }, [router]);
 
   const fetchData = async () => {

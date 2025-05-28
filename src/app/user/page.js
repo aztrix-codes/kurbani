@@ -48,15 +48,27 @@ function Page() {
     }
   }, [router]);
 
+  const mumbaiData = data.filter(i => i.zone === 'Mumbai' && i.status === 1)
+  const mumbaiTotal = mumbaiData.length
+  const mumbaiPaid = mumbaiData.filter(i => i.payment_status === 1).length
+  const mumbaiPending = mumbaiData.filter(i => i.payment_status === 0).length
+  const outOfMumbaiData = data.filter(i => i.zone === 'Out Of Mumbai' && i.status === 1)
+  const outOfMumbaiTotal = outOfMumbaiData.length
+  const OutOfmumbaiPaid = outOfMumbaiData.filter(i => i.payment_status === 1).length
+  const OutOfmumbaiPending = outOfMumbaiData.filter(i => i.payment_status === 0).length
+
+  console.log(data)
+
+
   const menuItems = [
     { title: "Add new share", icon: <PlusCircle className="tile-icon" />, href: "/user/new-share" },
     { title: "My shares", icon: <Briefcase className="tile-icon" />, href: "/user/my-shares" },
-    { title: "Total shares (Mumbai)", icon: <Users className="tile-icon" />, href: "#", amount: `(₹${100000})`, count: data.length, region: 'm' },
-    { title: "Total paid (Mumbai)", icon: <CreditCard className="tile-icon" />, href: "#", amount: `(₹${40000})`, count: 0, region: 'm' },
-    { title: "Total pending (Mumbai)", icon: <Clock className="tile-icon" />, href: "#", amount: `(₹${60000})`, count: 0, region: 'm' },
-    { title: "Total shares (OOM)", icon: <Users className="tile-icon" />, href: "#", amount: `(₹${100000})`, count: data.length, region: 'oom' },
-    { title: "Total paid (OOM)", icon: <CreditCard className="tile-icon" />, href: "#", amount: `(₹${40000})`, count: 0, region: 'oom' },
-    { title: "Total pending (OOM)", icon: <Clock className="tile-icon" />, href: "#", amount: `(₹${60000})`, count: 0, region: 'oom' },
+    { title: "Total shares (Mumbai)", icon: <Users className="tile-icon" />, href: "#", amount: `(₹${100000})`, count: mumbaiTotal, region: 'm' },
+    { title: "Total paid (Mumbai)", icon: <CreditCard className="tile-icon" />, href: "#", amount: `(₹${40000})`, count: mumbaiPaid, region: 'm' },
+    { title: "Total pending (Mumbai)", icon: <Clock className="tile-icon" />, href: "#", amount: `(₹${60000})`, count: mumbaiPending, region: 'm' },
+    { title: "Total shares (OOM)", icon: <Users className="tile-icon" />, href: "#", amount: `(₹${100000})`, count: outOfMumbaiTotal, region: 'oom' },
+    { title: "Total paid (OOM)", icon: <CreditCard className="tile-icon" />, href: "#", amount: `(₹${40000})`, count: OutOfmumbaiPaid, region: 'oom' },
+    { title: "Total pending (OOM)", icon: <Clock className="tile-icon" />, href: "#", amount: `(₹${60000})`, count: OutOfmumbaiPending, region: 'oom' },
     { title: "My invoice", icon: <FileText className="tile-icon" />, href: "/user/my-invoice" },
     { title: "User Guidelines", icon: <Info className="tile-icon" />, href: "/user/guidelines" },
     { title: "Contact us", icon: <MessageCircle className="tile-icon" />, href: "/user/contact-us" }
