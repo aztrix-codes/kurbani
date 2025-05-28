@@ -12,6 +12,27 @@ function UserLoginPage() {
   const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
 
+  useEffect(() => {
+  const setupDatabase = async () => {
+    try {
+      const response = await axios.get('/api/setupdb');
+      // console.log('Setup response:', response.data);
+      
+      if (response.data.success) {
+        console.log('Setup successful!');
+        // console.log('Tables created:', response.data.tables);
+        // console.log('Default users:', response.data.defaultUsers);
+      } else {
+        // console.error('Setup failed:', response.data.message);
+      }
+    } catch (error) {
+      // console.error('Setup error:', error.response?.data || error.message);
+    }
+  };
+
+  setupDatabase();
+}, []);
+
   // Check screen size for mobile responsiveness
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth <= 768);
