@@ -194,30 +194,7 @@ function SuperAdminLoginPage() {
     },
   };
 
-  // Media query function for responsive design
-  const applyMediaQuery = () => {
-    if (window.innerWidth <= 768) {
-      return {
-        mainContainer: {
-          flexDirection: 'column',
-          backgroundColor: '#046307' // Set green background for mobile
-        },
-        leftPanel: {
-          display: 'none'
-        },
-        rightPanel: {
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'transparent' // Make transparent to show green background
-        },
-        formContainer: {
-          width: '85%',
-          padding: '30px'
-        }
-      };
-    }
-    return {};
-  };
+
 
   // Apply responsive styles
   const responsiveStyles = applyMediaQuery();
