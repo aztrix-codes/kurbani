@@ -197,11 +197,12 @@ function UserLoginPage() {
       position: 'relative'
     },
     formContainer: {
-      width: isMobile ? '90%' : '70%',
+      width: '90%',
       maxWidth: '450px',
-      padding: isMobile ? '30px' : '40px',
-      borderRadius: '1rem',
-      backgroundColor: 'white',
+      padding: isMobile ? '20px' : '40px',
+      borderRadius: '1.5rem',
+      backdropFilter: 'blur(10px)',
+      backgroundColor: 'rgba(255,255,255, .2)',
       boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)',
       margin: isMobile ? '0 auto' : '0',
       transform: isMobile ? 'translateY(0)' : 'none'
@@ -213,18 +214,18 @@ function UserLoginPage() {
       zIndex: 1
     },
     brandTitle: {
-      fontSize: '42px',
-      fontWeight: 'bold',
-      marginBottom: '20px'
+      fontSize: '3vw',
+      fontWeight: '600',
+      marginBottom: '1vw'
     },
     brandSubtitle: {
-      fontSize: '20px',
+      fontSize: '1.5vw',
       opacity: 0.9,
       lineHeight: 1.6
     },
     formTitle: {
       fontSize: '28px',
-      color: '#333',
+      color: isMobile ? "#f8fafc" : "black",
       marginBottom: '30px',
       textAlign: 'center',
       fontWeight: 'bold'
@@ -235,9 +236,9 @@ function UserLoginPage() {
     formLabel: {
       display: 'block',
       marginBottom: '8px',
-      fontSize: '14px',
+      fontSize: '16px',
       fontWeight: '500',
-      color: '#333'
+      color: isMobile ? "#f8fafc" : "black"
     },
     formInput: {
       width: '100%',
@@ -248,23 +249,24 @@ function UserLoginPage() {
       outline: 'none',
       transition: 'border-color 0.2s',
       boxSizing: 'border-box',
-      color: "#333",
+      color: isMobile ? "#f8fafc" : "black",
+      background: "rgba(255,255,255,.3)"
     },
     submitButton: {
       width: '100%',
       padding: '14px',
-      backgroundColor: '#046307',
-      color: 'white',
+      backgroundColor: isMobile ? "#f8fafc" : "#046307",
+      color: isMobile ? "#046307" : "#f8fafc",
       border: 'none',
       borderRadius: '1rem',
-      fontSize: '16px',
+      fontSize: '18px',
       fontWeight: '500',
       cursor: 'pointer',
-      transition: 'background-color 0.2s',
       marginTop: '10px'
     },
     submitButtonHover: {
-      backgroundColor: '#034d05'
+      backgroundColor: '#034d05',
+      color: "#f8fafc"
     },
     errorText: {
       color: '#e74c3c',
@@ -274,8 +276,8 @@ function UserLoginPage() {
     },
     backgroundCircle1: {
       position: 'absolute',
-      width: '300px',
-      height: '300px',
+      width: '18vw',
+      height: '18vw',
       borderRadius: '50%',
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
       top: '10%',
@@ -284,31 +286,49 @@ function UserLoginPage() {
     },
     backgroundCircle2: {
       position: 'absolute',
-      width: '400px',
-      height: '400px',
+      width: '26vw',
+      height: '26vw',
       borderRadius: '50%',
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
       bottom: '10%',
       right: '5%',
       display: isMobile ? 'none' : 'block'
     },
-    backgroundCircle3: {
+    circle1: {
       position: 'absolute',
       width: '300px',
       height: '300px',
       borderRadius: '50%',
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      top: '5%',
-      left: '20%'
+      top: '-12%',
+      left: '-25%'
     },
-    backgroundCircle4: {
+    circle2: {
+      position: 'absolute',
+      width: '250px',
+      height: '250px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      top: '10%',
+      right: '-15%'
+    },
+    circle3: {
+      position: 'absolute',
+      width: '250px',
+      height: '250px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      bottom:'20%',
+      left: '-5%'
+    },
+    circle4: {
       position: 'absolute',
       width: '300px',
       height: '300px',
       borderRadius: '50%',
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
-      bottom: '-15%',
-      left: '-15%'
+      bottom: '-10%',
+      right: '-20%'
     },
   };
 
@@ -316,8 +336,10 @@ function UserLoginPage() {
     <div style={styles.mainContainer}>
       {/* Right Panel - Login Form */}
       <div style={styles.rightPanel}>
-        <div style={styles.backgroundCircle3}></div>
-        <div style={styles.backgroundCircle4}></div>
+        <div style={styles.circle1}></div>
+        <div style={styles.circle2}></div>
+        <div style={styles.circle3}></div>
+        <div style={styles.circle4}></div>
         <div style={styles.formContainer}>
           <h2 style={styles.formTitle}>User Login</h2>
           

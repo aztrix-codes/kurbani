@@ -70,21 +70,14 @@ function SuperAdminLoginPage() {
   const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const checkIsMobile = () => {
-        setIsMobile(window.innerWidth <= 768);
-      };
-      
-      checkIsMobile();
-      
-      const handleResize = () => {
-        checkIsMobile();
-      };
-
-      window.addEventListener('resize', handleResize);
-      return () => window.removeEventListener('resize', handleResize);
+  if (typeof window !== 'undefined') {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const isMobileDevice = /android|iphone|ipad|ipod|opera mini|iemobile|mobile/i.test(userAgent);
+    if (isMobileDevice) {
+      router.replace('/');
     }
-  }, []);
+  }
+}, [router]);
 
   const styles = {
     mainContainer: {
@@ -120,12 +113,12 @@ function SuperAdminLoginPage() {
       zIndex: 1
     },
     brandTitle: {
-      fontSize: '42px',
+      fontSize: '3vw',
       fontWeight: 'bold',
-      marginBottom: '20px'
+      marginBottom: '1vw'
     },
     brandSubtitle: {
-      fontSize: '20px',
+      fontSize: '1.5vw',
       opacity: 0.9,
       lineHeight: 1.6
     },
@@ -134,7 +127,8 @@ function SuperAdminLoginPage() {
       maxWidth: '450px',
       padding: '40px',
       borderRadius: '1rem',
-      backgroundColor: 'white',
+      backdropFilter: 'blur(10px)',
+      backgroundColor: 'rgba(255,255,255, .2)',
       boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)'
     },
     formTitle: {
@@ -188,8 +182,8 @@ function SuperAdminLoginPage() {
     },
     backgroundCircle1: {
       position: 'absolute',
-      width: '300px',
-      height: '300px',
+      width: '18vw',
+      height: '18vw',
       borderRadius: '50%',
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
       top: '10%',
@@ -197,8 +191,8 @@ function SuperAdminLoginPage() {
     },
     backgroundCircle2: {
       position: 'absolute',
-      width: '400px',
-      height: '400px',
+      width: '26vw',
+      height: '26vw',
       borderRadius: '50%',
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
       bottom: '10%',

@@ -121,174 +121,7 @@ function AdminLoginPage() {
     }
   };
 
-  const getStyles = () => {
-    const baseStyles = {
-      mainContainer: {
-        display: 'flex',
-        width: '100vw',
-        height: '100vh',
-        margin: 0,
-        padding: 0,
-        overflow: 'hidden',
-        flexDirection: 'row-reverse'
-      },
-      leftPanel: {
-        width: '50%',
-        height: '100%',
-        backgroundColor: '#046307',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        position: 'relative'
-      },
-      rightPanel: {
-        width: '50%',
-        height: '100%',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#f8fafc'
-      },
-      leftPanelContent: {
-        color: 'white',
-        textAlign: 'center',
-        maxWidth: '80%',
-        zIndex: 1
-      },
-      brandTitle: {
-        fontSize: '42px',
-        fontWeight: 'bold',
-        marginBottom: '20px'
-      },
-      brandSubtitle: {
-        fontSize: '20px',
-        opacity: 0.9,
-        lineHeight: 1.6
-      },
-      formContainer: {
-        width: '70%',
-        maxWidth: '450px',
-        padding: '40px',
-        borderRadius: '1rem',
-        backgroundColor: 'white',
-        boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)'
-      },
-      formTitle: {
-        fontSize: '28px',
-        color: '#333',
-        marginBottom: '30px',
-        textAlign: 'center',
-        fontWeight: 'bold'
-      },
-      formGroup: {
-        marginBottom: '20px'
-      },
-      formLabel: {
-        display: 'block',
-        marginBottom: '8px',
-        fontSize: '14px',
-        fontWeight: '500',
-        color: '#333'
-      },
-      formInput: {
-        width: '100%',
-        padding: '12px 15px',
-        fontSize: '16px',
-        borderRadius: '1rem',
-        border: '1px solid #ddd',
-        outline: 'none',
-        transition: 'border-color 0.2s',
-        boxSizing: 'border-box'
-      },
-      submitButton: {
-        width: '100%',
-        padding: '14px',
-        backgroundColor: '#046307',
-        color: 'white',
-        border: 'none',
-        borderRadius: '1rem',
-        fontSize: '16px',
-        fontWeight: '500',
-        cursor: 'pointer',
-        transition: 'background-color 0.2s',
-        marginTop: '10px',
-      },
-      submitButtonHover: {
-        backgroundColor: '#034d05'
-      },
-      errorText: {
-        color: '#e74c3c',
-        fontSize: '14px',
-        marginTop: '10px',
-        textAlign: 'center'
-      },
-      backgroundCircle1: {
-        position: 'absolute',
-        width: '300px',
-        height: '300px',
-        borderRadius: '50%',
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        top: '10%',
-        left: '10%'
-      },
-      backgroundCircle2: {
-        position: 'absolute',
-        width: '400px',
-        height: '400px',
-        borderRadius: '50%',
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        bottom: '10%',
-        right: '5%'
-      },
-      backgroundCircle3: {
-        position: 'absolute',
-        width: '300px',
-        height: '300px',
-        borderRadius: '50%',
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        top: '5%',
-        left: '20%'
-      },
-      backgroundCircle4: {
-        position: 'absolute',
-        width: '300px',
-        height: '300px',
-        borderRadius: '50%',
-        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-        bottom: '-15%',
-        left: '-15%'
-      },
-    };
 
-    // Apply mobile styles if on mobile
-    if (isMobile) {
-      return {
-        ...baseStyles,
-        mainContainer: {
-          ...baseStyles.mainContainer,
-          flexDirection: 'column',
-          backgroundColor: '#046307'
-        },
-        leftPanel: {
-          ...baseStyles.leftPanel,
-          display: 'none'
-        },
-        rightPanel: {
-          ...baseStyles.rightPanel,
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'transparent'
-        },
-        formContainer: {
-          ...baseStyles.formContainer,
-          width: '85%',
-          padding: '30px'
-        }
-      };
-    }
-
-    return baseStyles;
-  };
 
   const [buttonHovered, setButtonHovered] = useState(false);
 
@@ -297,13 +130,179 @@ function AdminLoginPage() {
     return null;
   }
 
-  const styles = getStyles();
+const styles = {
+    mainContainer: {
+      display: 'flex',
+      width: '100vw',
+      height: '100vh',
+      margin: 0,
+      padding: 0,
+      overflow: 'hidden',
+      flexDirection: isMobile ? 'column' : 'row-reverse',
+      backgroundColor: isMobile ? '#046307' : 'transparent',
+      position: 'relative'
+    },
+    leftPanel: {
+      width: isMobile ? '0%' : '50%',
+      height: '100%',
+      backgroundColor: '#046307',
+      display: isMobile ? 'none' : 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      position: 'relative'
+    },
+    rightPanel: {
+      width: isMobile ? '100%' : '50%',
+      height: isMobile ? '100%' : '100%',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: isMobile ? 'transparent' : '#f8fafc',
+      position: 'relative'
+    },
+    formContainer: {
+      width: '90%',
+      maxWidth: '450px',
+      padding: isMobile ? '20px' : '40px',
+      borderRadius: '1.5rem',
+      backdropFilter: 'blur(10px)',
+      backgroundColor: 'rgba(255,255,255, .2)',
+      boxShadow: '0 5px 15px rgba(0, 0, 0, 0.05)',
+      margin: isMobile ? '0 auto' : '0',
+      transform: isMobile ? 'translateY(0)' : 'none'
+    },
+    leftPanelContent: {
+      color: 'white',
+      textAlign: 'center',
+      maxWidth: '80%',
+      zIndex: 1
+    },
+    brandTitle: {
+      fontSize: '3vw',
+      fontWeight: '600',
+      marginBottom: '1vw'
+    },
+    brandSubtitle: {
+      fontSize: '1.5vw',
+      opacity: 0.9,
+      lineHeight: 1.6
+    },
+    formTitle: {
+      fontSize: '28px',
+      color: isMobile ? "#f8fafc" : "black",
+      marginBottom: '30px',
+      textAlign: 'center',
+      fontWeight: 'bold'
+    },
+    formGroup: {
+      marginBottom: '20px'
+    },
+    formLabel: {
+      display: 'block',
+      marginBottom: '8px',
+      fontSize: '16px',
+      fontWeight: '500',
+      color: isMobile ? "#f8fafc" : "black"
+    },
+    formInput: {
+      width: '100%',
+      padding: '12px 15px',
+      fontSize: '16px',
+      borderRadius: '1rem',
+      border: '1px solid #ddd',
+      outline: 'none',
+      transition: 'border-color 0.2s',
+      boxSizing: 'border-box',
+      color: isMobile ? "#f8fafc" : "black",
+      background: "rgba(255,255,255,.3)"
+    },
+    submitButton: {
+      width: '100%',
+      padding: '14px',
+      backgroundColor: isMobile ? "#f8fafc" : "#046307",
+      color: isMobile ? "#046307" : "#f8fafc",
+      border: 'none',
+      borderRadius: '1rem',
+      fontSize: '18px',
+      fontWeight: '500',
+      cursor: 'pointer',
+      marginTop: '10px'
+    },
+    submitButtonHover: {
+      backgroundColor: '#034d05',
+      color: "#f8fafc"
+    },
+    errorText: {
+      color: '#e74c3c',
+      fontSize: '14px',
+      marginTop: '10px',
+      textAlign: 'center'
+    },
+    backgroundCircle1: {
+      position: 'absolute',
+      width: '18vw',
+      height: '18vw',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      top: '10%',
+      left: '10%',
+      display: isMobile ? 'none' : 'block'
+    },
+    backgroundCircle2: {
+      position: 'absolute',
+      width: '26vw',
+      height: '26vw',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      bottom: '10%',
+      right: '5%',
+      display: isMobile ? 'none' : 'block'
+    },
+    circle1: {
+      position: 'absolute',
+      width: '300px',
+      height: '300px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      top: '-12%',
+      left: '-25%'
+    },
+    circle2: {
+      position: 'absolute',
+      width: '250px',
+      height: '250px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      top: '10%',
+      right: '-15%'
+    },
+    circle3: {
+      position: 'absolute',
+      width: '250px',
+      height: '250px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      bottom:'20%',
+      left: '-5%'
+    },
+    circle4: {
+      position: 'absolute',
+      width: '300px',
+      height: '300px',
+      borderRadius: '50%',
+      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      bottom: '-10%',
+      right: '-20%'
+    },
+  };
 
   return (
     <div style={styles.mainContainer}>
       <div style={styles.rightPanel}>
-        <div style={styles.backgroundCircle3}></div>
-        <div style={styles.backgroundCircle4}></div>
+        <div style={styles.circle1}></div>
+        <div style={styles.circle2}></div>
+        <div style={styles.circle3}></div>
+        <div style={styles.circle4}></div>
         <div style={styles.formContainer}>
           <h2 style={styles.formTitle}>Admin Login</h2>
           
