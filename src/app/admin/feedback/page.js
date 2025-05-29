@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import './style.css';
+import { useRouter } from 'next/navigation';
 
 function UserFeedbackPage() {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -13,6 +14,16 @@ function UserFeedbackPage() {
   const [feedbackText, setFeedbackText] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formErrors, setFormErrors] = useState({});
+  const router = useRouter();
+    
+  
+    useEffect(() => {
+      const isLogged = localStorage.getItem('adminLoggedIn') === 'false';
+      if (isLogged) {
+        router.replace('/auth/admin');
+      }
+    }, [router]);
+
 
   // Fetch all feedbacks
   const fetchFeedbacks = async () => {

@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import './feedback-styles.css';
+import { useRouter } from 'next/navigation';
 
 function FeedbackPage() {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -9,6 +10,14 @@ function FeedbackPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [notification, setNotification] = useState("null");
+  const router = useRouter()
+  
+    useEffect(() => {
+    const isLoggedIn = localStorage.getItem('superAdminLoggedIn') === 'true';
+    if (!isLoggedIn) {
+      router.replace('/auth/superadmin');
+    }
+  }, [router]);
 
   // Fetch all feedbacks
   const fetchFeedbacks = async () => {
